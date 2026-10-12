@@ -1,0 +1,56 @@
+#include <cstdio>
+#include <ufbx.h>
+
+#include "anim.h"
+
+using namespace anim;
+
+bool Anim::load_fbx_scene(const char* filename, ufbx_scene** out_scene) {
+    ufbx_load_opts opts = {};
+    opts.target_axes = ufbx_axes_right_handed_y_up;
+    opts.target_unit_meters = 1.0f;
+
+    ufbx_error error;
+    *out_scene = ufbx_load_file(filename, &opts, &error);
+    if (!(*out_scene)) {
+        std::fprintf(stderr, "Laden mislukt: %s\n", error.description.data);
+        return 1;
+    }
+    return 0;
+}
+
+int Anim::get_finger_bones_from_scene(ufbx_scene* scene, std::vector<ufbx_node*>* out_nodes, std::vector<JointTrack>* out_tracks) {
+    // TODO: PAS AAN ZODAT DIT NIET EEN GEHARDCODEDE FILTER IS
+    auto isFinger = [](const std::string& n) {
+        for (const char* key : {"thumb_0", "index_0", "middle_0", "ring_0", "pinky_0"})
+            if (n.find(key) != std::string::npos) return true;
+        return false;
+    };
+
+    for (size_t i = 0; i < scene->nodes.count; ++i) {
+        ufbx_node* node = scene->nodes.data[i];
+        std::string name(node->name.data, node->name.length);
+        if (isFinger(name)) {
+            printf("Vingerbotje gevonden: %s\n", name.c_str());
+            out_nodes->push_back(node);
+            out_tracks->push_back({name, {}});
+        }
+    }
+    std::printf("%zu vingerbotjes gevonden\n", out_nodes->size());
+    return out_nodes->size();
+}
+
+void Anim::fill_joint_tracks(const ufbx_anim* anim, const std::vector<ufbx_node*>& nodes, std::vector<JointTrack>& out_tracks) {
+    double t0 = anim->time_begin;
+    double t1 = anim->time_end;
+    double dt = 1.0 / 24.0;  // TODO: PAS AAN ZODAT DIT NIET GEHARDCODED IS
+
+    for (double t = t0; t <= t1; t += dt) {
+        for (size_t j = 0; j < nodes.size(); ++j) {
+            ufbx_transform tr = ufbx_evaluate_transform(anim, nodes[j], t);
+            // lokale rotatie t.o.v. de parent
+            out_tracks[j].q.emplace_back(tr.rotation.w, tr.rotation.x,
+                                     tr.rotation.y, tr.rotation.z);
+        }
+    }
+}
