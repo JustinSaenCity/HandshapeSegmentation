@@ -3,6 +3,7 @@
   "version-string": "0.1.0",
   "dependencies": [
     "eigen3",
-    "matplotlib-cpp"
+    "matplotlib-cpp",
+    "nlohmann-json"
   ]
 }

@@ -2,6 +2,7 @@
 #include <ufbx.h>
 
 #include "anim.h"
+#include "config/config.h"
 
 using namespace anim;
 
@@ -19,10 +20,9 @@ bool Anim::load_fbx_scene(const char* filename, ufbx_scene** out_scene) {
     return 0;
 }
 
-int Anim::get_finger_bones_from_scene(ufbx_scene* scene, std::vector<ufbx_node*>* out_nodes, std::vector<JointTrack>* out_tracks) {
-    // TODO: PAS AAN ZODAT DIT NIET EEN GEHARDCODEDE FILTER IS
-    auto isFinger = [](const std::string& n) {
-        for (const char* key : {"thumb_0", "index_0", "middle_0", "ring_0", "pinky_0"})
+int Anim::get_bones_from_scene(ufbx_scene* scene, const std::vector<std::string>& bone_filter, std::vector<ufbx_node*>* out_nodes, std::vector<JointTrack>* out_tracks) {
+    auto isInBoneFilter = [bone_filter](const std::string& n) {
+        for (const std::string& key : bone_filter)
             if (n.find(key) != std::string::npos) return true;
         return false;
     };
@@ -30,7 +30,7 @@ int Anim::get_finger_bones_from_scene(ufbx_scene* scene, std::vector<ufbx_node*>
     for (size_t i = 0; i < scene->nodes.count; ++i) {
         ufbx_node* node = scene->nodes.data[i];
         std::string name(node->name.data, node->name.length);
-        if (isFinger(name)) {
+        if (isInBoneFilter(name)) {
             out_nodes->push_back(node);
             out_tracks->push_back({name, {}});
         }

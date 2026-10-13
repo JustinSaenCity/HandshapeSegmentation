@@ -9,6 +9,8 @@ find_package(Eigen3 CONFIG REQUIRED)
 find_path(MATPLOTLIB_CPP_INCLUDE_DIRS "matplotlibcpp.h" REQUIRED)
 find_package(Python3 COMPONENTS Development NumPy REQUIRED)
 
+find_package(nlohmann_json CONFIG REQUIRED)
+
 # Fetch ufbx from GitHub and build it as a static library
 include(FetchContent)
 FetchContent_Declare(ufbx
@@ -34,7 +36,8 @@ endif()
 target_link_libraries(handseg PRIVATE Eigen3::Eigen
                       ufbx_lib
                       Python3::Python
-                      Python3::NumPy)
+                      Python3::NumPy
+                      nlohmann_json::nlohmann_json)
 
 target_include_directories(handseg PRIVATE
                           src

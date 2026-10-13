@@ -8,6 +8,7 @@
 
 #include "math/math.h"
 #include "anim/anim.h"
+#include "config/config.h"
 
 using namespace math;
 using namespace anim;
@@ -15,6 +16,9 @@ using namespace anim;
 int main(int argc, char** argv)
 {
     if (argc < 2) { std::puts("Gebruik: handseg <bestand.fbx>"); return 1; }
+
+    // Load config data from config.json
+    Config config = Config::load_from_file("config.json");
 
     // Load the FBX file
     ufbx_error error;
@@ -25,7 +29,7 @@ int main(int argc, char** argv)
     // Find the finger bones
     std::vector<ufbx_node*> nodes;
     std::vector<JointTrack> tracks;
-    int num_fingers = Anim::get_finger_bones_from_scene(scene, &nodes, &tracks);
+    int num_fingers = Anim::get_bones_from_scene(scene, config.bone_filter, &nodes, &tracks);
     if (num_fingers == 0) {
         std::puts("No finger bones found, please adjust the filter.");
         ufbx_free_scene(scene);
@@ -51,46 +55,59 @@ int main(int argc, char** argv)
         Math::smooth_quaternions(quaternion_track, 2.0);
     }
 
-    auto speed = Math::aggregate_speed(right_hand_quaternion_tracks, dt);
+    auto speed = Math::aggregate_speed(right_hand_quaternion_tracks, dt, config.segment_by);
 
-    // Plot the speed values
+    // // Plot the speed values
     std::vector<double> x(speed.size());
     for (size_t i = 0; i < speed.size(); ++i) x[i] = i * dt;
 
-    matplotlibcpp::figure();
-    matplotlibcpp::plot(x, speed);
+    // matplotlibcpp::figure();
+    // matplotlibcpp::plot(x, speed);
 
-    // Show handmade lines for self input segments, each segment its own colour
-    auto plotsegs = {
-        Segment{0, 83},
-        Segment{86, 89},
-        Segment{92, 95},
-        Segment{100, 132},
-        Segment{136, 138},
-        Segment{142, 147},
-        Segment{152, 155},
-        Segment{163, 169},
-        Segment{175, 177},
-        Segment{180, 182},
-        Segment{191, 216}
-    };
+    // // Show handmade lines for self input segments, each segment its own colour
+    // auto plotsegs = {
+    //     Segment{0, 83},
+    //     Segment{86, 89},
+    //     Segment{92, 95},
+    //     Segment{100, 132},
+    //     Segment{136, 138},
+    //     Segment{142, 147},
+    //     Segment{152, 155},
+    //     Segment{163, 169},
+    //     Segment{175, 177},
+    //     Segment{180, 182},
+    //     Segment{191, 216}
+    // };
 
-    for (const auto& s : plotsegs) {
-        std::vector<double> seg_x, seg_y;
-        for (int i = s.start; i <= s.end; ++i) {
-            seg_x.push_back(i * dt);
-            seg_y.push_back(speed[i]);
-        }
-        matplotlibcpp::plot(seg_x, seg_y);
-    }
+    // for (const auto& s : plotsegs) {
+    //     std::vector<double> seg_x, seg_y;
+    //     for (int i = s.start; i <= s.end; ++i) {
+    //         seg_x.push_back(i * dt);
+    //         seg_y.push_back(speed[i]);
+    //     }
+    //     matplotlibcpp::plot(seg_x, seg_y);
+    // }
 
     // Plot smoothed values seperately
     std::vector<double> smoothed_speed = speed;
-    Math::smooth_values(smoothed_speed, 1.5);
+    Math::smooth_values(smoothed_speed, config.smooth_segment_values_sigma);
+
+    
+    // Segment the handshapes based on speed thresholds
+    std::vector<double> sorted = speed; std::sort(sorted.begin(), sorted.end());
+    double median = sorted[sorted.size() / 2];
+    double low  = 1.0 * median;  // Value above which we consider a handshape to be in transition
+    double high = 1.5 * median;  // Value below which we consider a handshape to be stable
+    
+    // auto segs = Math::segment_handshapes(speed, low, high, config.min_segment_length);
+    auto segs = Math::segment_handshapes_by_acceleration(smoothed_speed, config.acceleration_threshold_factor, config.min_segment_length);
+    for (auto& s : segs) std::printf("handshape: %d - %d\n", s.start, s.end);
+
+    // Plot smoothed values with the newly detected segments
     matplotlibcpp::figure();
     matplotlibcpp::plot(x, smoothed_speed);
 
-    for (const auto& s : plotsegs) {
+    for (const auto& s : segs) {
         std::vector<double> seg_x, seg_y;
         for (int i = s.start; i <= s.end; ++i) {
             seg_x.push_back(i * dt);
@@ -100,16 +117,7 @@ int main(int argc, char** argv)
     }
 
     matplotlibcpp::show();
-
-    // Segment the handshapes based on speed thresholds
-    std::vector<double> sorted = speed; std::sort(sorted.begin(), sorted.end());
-    double median = sorted[sorted.size() / 2];
-    double low  = 1.0 * median;  // Value above which we consider a handshape to be in transition
-    double high = 1.5 * median;  // Value below which we consider a handshape to be stable
-
-    auto segs = Math::segment_handshapes(speed, low, high, 2);
-    for (auto& s : segs) std::printf("handshape: %d - %d\n", s.start, s.end);
-
+    
     ufbx_free_scene(scene);
     return 0;
 }

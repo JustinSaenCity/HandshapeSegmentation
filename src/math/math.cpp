@@ -151,6 +151,64 @@ std::vector<Segment> Math::segment_handshapes(const std::vector<double>& values,
     return segments;
 }
 
+struct Extremum { int index; bool is_peak; };
+
+std::vector<Segment> Math::segment_handshapes_by_acceleration(const std::vector<double>& acc, double threshold_factor, int min_len)
+{
+    std::vector<Segment> segments;
+    const int n = static_cast<int>(acc.size());
+    if (n < 3) return segments;
+
+    // Set threshold based on the stddev and the threshold factor
+    double mean = std::accumulate(acc.begin(), acc.end(), 0.0) / n;
+    double var = 0.0;
+    for (double cur_a : acc) var += (cur_a - mean) * (cur_a - mean);
+    const double threshold = threshold_factor * std::sqrt(var / n);
+
+    // Detect all extrema above the threshold
+    std::vector<Extremum> found;
+    for (int i = 1; i < n - 1; ++i) {
+        if (acc[i] > threshold && acc[i] > acc[i - 1] && acc[i] >= acc[i + 1])
+            found.push_back({i, true});
+        else if (acc[i] < -threshold && acc[i] < acc[i - 1] && acc[i] <= acc[i + 1])
+            found.push_back({i, false});
+    }
+
+    // Combine consecutive extrema of the same type, note that the strongest extremum is kept
+    std::vector<Extremum> extrema;
+    for (const auto& cur_extremum : found) {
+        if (!extrema.empty() && extrema.back().is_peak == cur_extremum.is_peak) {
+            bool stronger = cur_extremum.is_peak ? acc[cur_extremum.index] > acc[extrema.back().index]
+                                                 : acc[cur_extremum.index] < acc[extrema.back().index];
+            if (stronger) extrema.back() = cur_extremum;
+        } else {
+            extrema.push_back(cur_extremum);
+        }
+    }
+    if (extrema.empty()) return segments;
+
+    // Helper function to add a segment if it meets the minimum length requirement
+    auto add = [&](int start, int end) {
+        if (end - start + 1 >= min_len) segments.push_back({start, end});
+    };
+
+    // If the first extremum is a peak, the first segment is from 0 to the first peak
+    size_t k = 0;
+    if (extrema[0].is_peak) {
+        add(0, extrema[0].index);
+        k = 1;
+    }
+
+    // Iterate through the extrema in pairs (valley, peak) to define segments
+    for (; k < extrema.size(); k += 2) {  // extrema[k] is always a valley, extrema[k+1] is always a peak
+        if (k + 1 < extrema.size())
+            add(extrema[k].index, extrema[k + 1].index);
+        else
+            add(extrema[k].index, n - 1);
+    }
+    return segments;
+}
+
 void Math::smooth_values(std::vector<double>& values, double sigma) {
     if (values.empty()) return;
 
