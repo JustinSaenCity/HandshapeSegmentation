@@ -29,15 +29,30 @@ double Math::angular_speed_between_quats(const Eigen::Quaterniond& q1, const Eig
 }
 
 double Math::angular_speed_at_time(const std::vector<Eigen::Quaterniond>& quaternions, const int& time, const double& dt) {
-    if (time <= 0 || time >= quaternions.size() - 1) {
+    if (time <= 0 || time >= quaternions.size() - 1)
         throw std::out_of_range("Time index is out of range for the quaternion vector.");
-    }
+
 
     // Central difference
     const Eigen::Quaterniond& q1 = quaternions[time - 1];
     const Eigen::Quaterniond& q2 = quaternions[time + 1];
 
     return angular_speed_between_quats(q1, q2, 2 * dt);
+}
+
+double Math::angular_acceletation_at_time(const std::vector<Eigen::Quaterniond>& quaternions, const int& time, const double& dt) {
+    if (time <= 0 || time >= quaternions.size() - 1)
+        throw std::out_of_range("Time index is out of range for the quaternion vector.");
+
+    // Central difference
+    const Eigen::Quaterniond& q1 = quaternions[time - 1];
+    const Eigen::Quaterniond& q2 = quaternions[time];
+    const Eigen::Quaterniond& q3 = quaternions[time + 1];
+
+    double speed1 = angular_speed_between_quats(q1, q2, dt);
+    double speed2 = angular_speed_between_quats(q2, q3, dt);
+
+    return (speed2 - speed1) / dt;
 }
 
 void Math::align_quaternion_signs(std::vector<Eigen::Quaterniond>& quaternions) {
@@ -90,38 +105,87 @@ void Math::smooth_quaternions(std::vector<Eigen::Quaterniond>& quaternions, doub
     quaternions = smoothed_quaternions;
 }
 
-std::vector<double> Math::aggregate_speed(const std::vector<std::vector<Eigen::Quaterniond>>& quaternion_tracks, double dt) {
+std::vector<double> Math::aggregate_speed(const std::vector<std::vector<Eigen::Quaterniond>>& quaternion_tracks, double dt, SegmentBy segment_by) {
     const int n = static_cast<int>(quaternion_tracks[0].size());
     std::vector<double> speed(n, 0.0);
     for (int t = 1; t < n - 1; ++t) {
         double sum = 0;
-        for (const auto& quaternion_track : quaternion_tracks)
-        sum += Math::angular_speed_at_time(quaternion_track, t, dt);
+        for (const auto& quaternion_track : quaternion_tracks) {
+            switch (segment_by) {
+                case ANGULAR_VELOCITY:
+                    sum += Math::angular_speed_at_time(quaternion_track, t, dt);
+                    break;
+                case ANGULAR_ACCELERATION:
+                    sum += Math::angular_acceletation_at_time(quaternion_track, t, dt);
+                    break;
+            }
+        }
+        // sum += Math::angular_speed_at_time(quaternion_track, t, dt);
         speed[t] = sum / quaternion_tracks.size();
     }
     speed[0] = speed[1]; speed[n-1] = speed[n-2];
     return speed;
 }
 
-std::vector<Segment> Math::segment_handshapes(const std::vector<double>& v,
+std::vector<Segment> Math::segment_handshapes(const std::vector<double>& values,
                                    double low, double high, int min_len)
 {
     std::vector<Segment> segments;
 
-    bool in_handshape = v[0] < high;  // Is first frame in a handshape?
+    bool in_handshape = values[0] < high;  // Is first frame in a handshape?
     
     int start = 0;
-    for (int i = 1; i < (int)v.size(); ++i) {
-        if (in_handshape && v[i] > high) {  // Handshape ends
+    for (int i = 1; i < (int)values.size(); ++i) {
+        if (in_handshape && values[i] > high) {  // Handshape ends
             if (i - start >= min_len) segments.push_back({start, i - 1});
             in_handshape = false;
-        } else if (!in_handshape && v[i] < low) {  // Handshape starts
-            in_handshape = true; start = i;
+        } else if (!in_handshape && values[i] < low) {  // Handshape starts
+            in_handshape = true;
+            start = i;
         }
     }
 
     // If the last segment is still going, add it
-    if (in_handshape && (int)v.size() - start >= min_len)
-        segments.push_back({start, (int)v.size() - 1});
+    if (in_handshape && (int)values.size() - start >= min_len)
+        segments.push_back({start, (int)values.size() - 1});
     return segments;
+}
+
+void Math::smooth_values(std::vector<double>& values, double sigma) {
+    if (values.empty()) return;
+
+    // Gaussian kernel
+    int kernel_radius = static_cast<int>(std::ceil(3 * sigma));  // 3-sigma rule
+    std::vector<double> kernel(2 * kernel_radius + 1);
+    double sum = 0.0;
+
+    for (int i = -kernel_radius; i <= kernel_radius; ++i) {
+        kernel[i + kernel_radius] = std::exp(-0.5 * (i * i) / (sigma * sigma));
+        sum += kernel[i + kernel_radius];
+    }
+
+    for (double& value : kernel)
+        value /= sum;
+
+    // Smooth the values using the kernel
+    std::vector<double> smoothed_values = values;
+
+    for (int i = 0; i < static_cast<int>(values.size()); ++i) {
+        double smoothed = 0.0;
+        double weight_sum = 0.0;
+
+        for (int j = -kernel_radius; j <= kernel_radius; ++j) {
+            int idx = i + j;
+            if (idx < 0 || idx >= values.size()) continue;
+
+            double weight = kernel[j + kernel_radius];
+            smoothed += weight * values[idx];
+            weight_sum += weight;
+        }
+
+        smoothed /= weight_sum;
+        smoothed_values[i] = smoothed;
+    }
+
+    values = smoothed_values;
 }

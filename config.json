@@ -1,0 +1,6 @@
+{
+    "bone_filter": ["thumb_0", "index_0", "middle_0", "ring_0", "pinky_0"],
+    "min_segment_length": 2,
+    "segment_by": "angular_acceleration",
+    "smooth_segment_values_sigma": 1.5
+}
