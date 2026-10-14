@@ -22,7 +22,7 @@ namespace math
         static void align_quaternion_signs(std::vector<Eigen::Quaterniond>& quaternions);
         static void smooth_quaternions(std::vector<Eigen::Quaterniond>& quaternions, double sigma);
         static void smooth_values(std::vector<double>& values, double sigma);
-        static std::vector<double> aggregate_speed(const std::vector<std::vector<Eigen::Quaterniond>>& quaternion_tracks, double dt, SegmentBy segment_by = ANGULAR_ACCELERATION);
+        static std::vector<double> aggregate_quaternion_data(const std::vector<std::vector<Eigen::Quaterniond>>& quaternion_tracks, double dt, SegmentBy segment_by = ANGULAR_ACCELERATION);
         static std::vector<struct Segment> segment_handshapes(const std::vector<double>& values, double low, double high, int min_len);
         static std::vector<struct Segment> segment_handshapes_by_acceleration(const std::vector<double>& acc, double threshold_factor, int min_len);
     };

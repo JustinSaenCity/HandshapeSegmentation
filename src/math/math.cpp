@@ -105,7 +105,7 @@ void Math::smooth_quaternions(std::vector<Eigen::Quaterniond>& quaternions, doub
     quaternions = smoothed_quaternions;
 }
 
-std::vector<double> Math::aggregate_speed(const std::vector<std::vector<Eigen::Quaterniond>>& quaternion_tracks, double dt, SegmentBy segment_by) {
+std::vector<double> Math::aggregate_quaternion_data(const std::vector<std::vector<Eigen::Quaterniond>>& quaternion_tracks, double dt, SegmentBy segment_by) {
     const int n = static_cast<int>(quaternion_tracks[0].size());
     std::vector<double> speed(n, 0.0);
     for (int t = 1; t < n - 1; ++t) {

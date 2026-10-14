@@ -38,3 +38,6 @@ CMakeUserPresets.json
 # Caches
 .cache/
 .cmake/
+
+# Program output
+output/

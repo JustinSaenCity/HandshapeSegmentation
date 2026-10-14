@@ -13,53 +13,10 @@
 using namespace math;
 using namespace anim;
 
-int main(int argc, char** argv)
+void plot_acceleration(const std::vector<double>& smoothed_data, const double& dt, const std::vector<struct Segment>& segs)
 {
-    if (argc < 2) { std::puts("Gebruik: handseg <bestand.fbx>"); return 1; }
-
-    // Load config data from config.json
-    Config config = Config::load_from_file("config.json");
-
-    // Load the FBX file
-    ufbx_error error;
-    ufbx_scene* scene;
-    if (Anim::load_fbx_scene(argv[1], &scene))
-        return 1;
-
-    // Find the finger bones
-    std::vector<ufbx_node*> nodes;
-    std::vector<JointTrack> tracks;
-    int num_fingers = Anim::get_bones_from_scene(scene, config.bone_filter, &nodes, &tracks);
-    if (num_fingers == 0) {
-        std::puts("No finger bones found, please adjust the filter.");
-        ufbx_free_scene(scene);
-        return 1;
-    }
-
-    // Sample the joint tracks for each finger bone
-    const ufbx_anim* anim = scene->anim;
-    Anim::fill_joint_tracks(anim, nodes, tracks);
-
-    // Compute the angular speed of each finger bone track and segment the handshapes
-    const double fps = anim->time_end > 0 ? 24.0 : 24.0;
-    const double dt = 1.0 / fps;
-
-    // Filter right hand tracks and apply preprocessing
-    std::vector<std::vector<Eigen::Quaterniond>> right_hand_quaternion_tracks;
-    for (const auto& tr : tracks)
-        if (tr.name.find("_r") != std::string::npos)
-            right_hand_quaternion_tracks.push_back(tr.q);
-
-    for (auto& quaternion_track : right_hand_quaternion_tracks) { 
-        Math::align_quaternion_signs(quaternion_track);
-        Math::smooth_quaternions(quaternion_track, 2.0);
-    }
-
-    auto speed = Math::aggregate_speed(right_hand_quaternion_tracks, dt, config.segment_by);
-
-    // // Plot the speed values
-    std::vector<double> x(speed.size());
-    for (size_t i = 0; i < speed.size(); ++i) x[i] = i * dt;
+    std::vector<double> x(smoothed_data.size());
+    for (size_t i = 0; i < smoothed_data.size(); ++i) x[i] = i * dt;
 
     // matplotlibcpp::figure();
     // matplotlibcpp::plot(x, speed);
@@ -88,36 +45,80 @@ int main(int argc, char** argv)
     //     matplotlibcpp::plot(seg_x, seg_y);
     // }
 
-    // Plot smoothed values seperately
-    std::vector<double> smoothed_speed = speed;
-    Math::smooth_values(smoothed_speed, config.smooth_segment_values_sigma);
-
-    
-    // Segment the handshapes based on speed thresholds
-    std::vector<double> sorted = speed; std::sort(sorted.begin(), sorted.end());
-    double median = sorted[sorted.size() / 2];
-    double low  = 1.0 * median;  // Value above which we consider a handshape to be in transition
-    double high = 1.5 * median;  // Value below which we consider a handshape to be stable
-    
-    // auto segs = Math::segment_handshapes(speed, low, high, config.min_segment_length);
-    auto segs = Math::segment_handshapes_by_acceleration(smoothed_speed, config.acceleration_threshold_factor, config.min_segment_length);
-    for (auto& s : segs) std::printf("handshape: %d - %d\n", s.start, s.end);
-
-    // Plot smoothed values with the newly detected segments
     matplotlibcpp::figure();
-    matplotlibcpp::plot(x, smoothed_speed);
+    matplotlibcpp::plot(x, smoothed_data);
 
     for (const auto& s : segs) {
         std::vector<double> seg_x, seg_y;
         for (int i = s.start; i <= s.end; ++i) {
             seg_x.push_back(i * dt);
-            seg_y.push_back(smoothed_speed[i]);
+            seg_y.push_back(smoothed_data[i]);
         }
         matplotlibcpp::plot(seg_x, seg_y);
     }
 
-    matplotlibcpp::show();
-    
+    std::filesystem::create_directory("output");
+    matplotlibcpp::save("output/acceleration_plot.png");
+}
+
+int main(int argc, char** argv)
+{
+    if (argc < 2) { std::puts("Usage: .\\handseg.exe <file.fbx>"); return 1; }
+
+    // Load config data from config.json
+    Config config = Config::load_from_file("config.json");
+
+    // Load the FBX file
+    ufbx_error error;
+    ufbx_scene* scene;
+    if (Anim::load_fbx_scene(argv[1], &scene))
+        return 1;
+
+    // Find the finger bones
+    std::vector<ufbx_node*> nodes;
+    std::vector<JointTrack> tracks;
+    int num_fingers = Anim::get_bones_from_scene(scene, config.bone_filter, &nodes, &tracks);
+    if (num_fingers == 0) {
+        std::puts("No finger bones found, please adjust the filter.");
+        ufbx_free_scene(scene);
+        return 1;
+    }
+
+    // Sample the joint tracks for each finger bone
+    const ufbx_anim* anim = scene->anim;
+    Anim::fill_joint_tracks(anim, nodes, tracks);
+
+    // Filter right hand tracks and apply preprocessing
+    std::vector<std::vector<Eigen::Quaterniond>> right_hand_quaternion_tracks;
+    for (const auto& tr : tracks)
+        if (tr.name.find("_r") != std::string::npos)
+            right_hand_quaternion_tracks.push_back(tr.q);
+
+    for (auto& quaternion_track : right_hand_quaternion_tracks) { 
+        Math::align_quaternion_signs(quaternion_track);
+        Math::smooth_quaternions(quaternion_track, 2.0);
+    }
+
+    // Aggregate the quaternion data into a single vector of values for segmentation
+    const double fps = anim->time_end > 0 ? scene->settings.frames_per_second : 24.0;
+    const double dt = 1.0 / fps;
+    std::vector<double> aggregate_data = Math::aggregate_quaternion_data(right_hand_quaternion_tracks, dt, config.segment_by);
+    std::vector<double> smoothed_data = aggregate_data;
+    Math::smooth_values(smoothed_data, config.smooth_segment_values_sigma);
+
+    // Segment the handshapes based on speed thresholds
+    auto segs = Math::segment_handshapes_by_acceleration(smoothed_data, config.acceleration_threshold_factor, config.min_segment_length);
+    for (auto& s : segs) std::printf("handshape: %d - %d\n", s.start, s.end);
+
+    // Write the segments to a CSV file
+    std::ofstream csv_file("output/handshape_segments.csv");
+    csv_file << "start,end\n";
+    for (const auto& s : segs) csv_file << s.start << "," << s.end << "\n";
+    csv_file.close();
+
+    // Plot the acceleration data
+    plot_acceleration(smoothed_data, dt, segs);
+
     ufbx_free_scene(scene);
     return 0;
 }
