@@ -2,6 +2,8 @@
   "name": "handseg",
   "version-string": "0.1.0",
   "dependencies": [
-    "eigen3"
+    "eigen3",
+    "matplotlib-cpp",
+    "nlohmann-json"
   ]
 }
