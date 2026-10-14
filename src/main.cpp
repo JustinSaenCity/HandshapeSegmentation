@@ -108,7 +108,6 @@ int main(int argc, char** argv)
 
     // Segment the handshapes based on speed thresholds
     auto segs = Math::segment_handshapes_by_acceleration(smoothed_data, config.acceleration_threshold_factor, config.min_segment_length);
-    for (auto& s : segs) std::printf("handshape: %d - %d\n", s.start, s.end);
 
     // Write the segments to a CSV file
     std::ofstream csv_file("output/handshape_segments.csv");
@@ -120,5 +119,7 @@ int main(int argc, char** argv)
     plot_acceleration(smoothed_data, dt, segs);
 
     ufbx_free_scene(scene);
+
+    printf("Segmentation complete. Results saved to output/handshape_segments.csv and output/acceleration_plot.png\n");
     return 0;
 }
