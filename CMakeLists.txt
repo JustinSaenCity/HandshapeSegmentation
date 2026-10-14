@@ -27,7 +27,8 @@ target_include_directories(ufbx_lib PUBLIC ${ufbx_SOURCE_DIR})
 add_executable(handseg
               src/main.cpp
               src/anim/anim.cpp
-              src/math/math.cpp)
+              src/math/math.cpp
+              src/handseg.cpp)
 
 if(MSVC)
     target_compile_definitions(handseg PRIVATE WITHOUT_NUMPY)
