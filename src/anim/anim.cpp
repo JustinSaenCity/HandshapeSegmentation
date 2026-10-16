@@ -1,5 +1,4 @@
 #include <cstdio>
-#include <ufbx.h>
 
 #include "anim.h"
 #include "config/config.h"

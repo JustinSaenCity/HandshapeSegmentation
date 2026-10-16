@@ -3,6 +3,7 @@
 #include <Eigen/Geometry>
 #include <string>
 #include <vector>
+#include <ufbx.h>
 
 struct JointTrack {
     std::string name;

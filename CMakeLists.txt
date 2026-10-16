@@ -28,6 +28,7 @@ add_executable(handseg
               src/main.cpp
               src/anim/anim.cpp
               src/math/math.cpp
+              src/matching/handshape.cpp
               src/handseg.cpp)
 
 if(MSVC)
