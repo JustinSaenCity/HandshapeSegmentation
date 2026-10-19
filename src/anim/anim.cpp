@@ -13,7 +13,7 @@ bool Anim::load_fbx_scene(const char* filename, ufbx_scene** out_scene) {
     ufbx_error error;
     *out_scene = ufbx_load_file(filename, &opts, &error);
     if (!(*out_scene)) {
-        std::fprintf(stderr, "Laden mislukt: %s\n", error.description.data);
+        std::fprintf(stderr, "Error loading fbx file %s: %s\n", filename, error.description.data);
         return 1;
     }
     return 0;

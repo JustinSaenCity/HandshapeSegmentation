@@ -8,6 +8,25 @@ using namespace handshape;
 
 std::vector<std::string> Handshape::get_all_handshape_files() {
     std::vector<std::string> handshape_files;
+    std::string handshape_dir = "../HandformSession/2026-10-19/";
+
+    // Go through all folders, in the folder get the fbx file located in unreal/Vicon/
+    for (const auto& entry : std::filesystem::directory_iterator(handshape_dir)) {
+        if (entry.is_directory()) {
+            std::string unreal_vicon_path = entry.path().string() + "/unreal/Vicon/";
+            for (const auto& sub_entry : std::filesystem::directory_iterator(unreal_vicon_path)) {
+                if (sub_entry.is_regular_file() &&
+                    (sub_entry.path().extension().string() == ".fbx" || sub_entry.path().extension().string() == ".FBX")) {
+                    handshape_files.push_back(sub_entry.path().string());
+                }
+            }
+        }
+    }
+    return handshape_files;
+}
+
+std::vector<std::string> get_all_handshape_files_old() {
+    std::vector<std::string> handshape_files;
     std::string handshape_dir = "fbx/handshapes";
 
     for (const auto& entry : std::filesystem::directory_iterator(handshape_dir)) {
@@ -46,6 +65,7 @@ Hand Handshape::get_average_handshape_from_segment(const std::vector<JointTrack>
 
 double Handshape::pose_distance(const Hand& shape1, const Hand& shape2) {
     if (shape1.joints.size() != shape2.joints.size()) {
+        printf("Error: Handshapes must have the same number of quaternions. Shape1 has %zu, Shape2 has %zu\n", shape1.joints.size(), shape2.joints.size());
         throw std::invalid_argument("Handshapes must have the same number of quaternions.");
     }
 
@@ -59,16 +79,18 @@ double Handshape::pose_distance(const Hand& shape1, const Hand& shape2) {
 }
 
 std::vector<Match> Handshape::match_handshapes(const std::vector<Hand>& handshapes, const Hand& input_shape) {
+    printf("2.5.0.1-------------------------------------------------------------\n");
     std::vector<Match> matches;
     for (size_t i = 0; i < handshapes.size(); ++i) {
         double distance = Handshape::pose_distance(handshapes[i], input_shape);
         matches.push_back({static_cast<int>(i), distance});
     }
-
+    printf("2.5.0.2-------------------------------------------------------------\n");
     // Sort matches by distance
     std::sort(matches.begin(), matches.end(), [](const Match& a, const Match& b) {
         return a.distance < b.distance;
     });
+    printf("2.5.0.3-------------------------------------------------------------\n");
 
     return matches;
 }
