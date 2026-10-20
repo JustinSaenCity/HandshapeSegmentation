@@ -79,18 +79,16 @@ double Handshape::pose_distance(const Hand& shape1, const Hand& shape2) {
 }
 
 std::vector<Match> Handshape::match_handshapes(const std::vector<Hand>& handshapes, const Hand& input_shape) {
-    printf("2.5.0.1-------------------------------------------------------------\n");
     std::vector<Match> matches;
     for (size_t i = 0; i < handshapes.size(); ++i) {
         double distance = Handshape::pose_distance(handshapes[i], input_shape);
         matches.push_back({static_cast<int>(i), distance});
     }
-    printf("2.5.0.2-------------------------------------------------------------\n");
+
     // Sort matches by distance
     std::sort(matches.begin(), matches.end(), [](const Match& a, const Match& b) {
         return a.distance < b.distance;
     });
-    printf("2.5.0.3-------------------------------------------------------------\n");
 
     return matches;
 }

@@ -24,6 +24,6 @@ namespace math
         static void smooth_values(std::vector<double>& values, double sigma);
         static std::vector<double> aggregate_quaternion_data(const std::vector<std::vector<Eigen::Quaterniond>>& quaternion_tracks, double dt, SegmentBy segment_by = ANGULAR_ACCELERATION);
         static std::vector<struct Segment> segment_handshapes(const std::vector<double>& values, double low, double high, int min_len);
-        static std::vector<struct Segment> segment_handshapes_by_acceleration(const std::vector<double>& acc, double threshold_factor, int min_len);
+        static std::vector<struct Segment> segment_handshapes_by_acceleration(const std::vector<double>& acc, double threshold_factor, int min_len, const double min_threshold);
     };
 }

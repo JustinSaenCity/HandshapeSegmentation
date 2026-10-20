@@ -1,6 +1,5 @@
 #include <ufbx.h>
 #include <Eigen/Geometry>
-#include <matplotlibcpp.h>
 
 #include <cstdio>
 #include <string>
@@ -15,58 +14,6 @@ using namespace math;
 using namespace anim;
 using namespace handseg;
 
-void plot_acceleration(const std::vector<double>& smoothed_data, const double& dt, const std::vector<struct Segment>& segs, const std::string& title = "Acceleration Plot")
-{
-    std::vector<double> x(smoothed_data.size());
-    for (size_t i = 0; i < smoothed_data.size(); ++i) x[i] = i * dt;
-
-    // matplotlibcpp::figure();
-    // matplotlibcpp::plot(x, smoothed_data);
-
-    // // Show handmade lines for self input segments, each segment its own colour
-    // auto plotsegs = {
-    //     Segment{0, 83},
-    //     Segment{86, 89},
-    //     Segment{92, 95},
-    //     Segment{100, 132},
-    //     Segment{136, 138},
-    //     Segment{142, 147},
-    //     Segment{152, 155},
-    //     Segment{163, 169},
-    //     Segment{175, 177},
-    //     Segment{180, 182},
-    //     Segment{191, 216}
-    // };
-
-    // for (const auto& s : plotsegs) {
-    //     std::vector<double> seg_x, seg_y;
-    //     for (int i = s.start; i <= s.end; ++i) {
-    //         seg_x.push_back(i * dt);
-    //         seg_y.push_back(smoothed_data[i]);
-    //     }
-    //     matplotlibcpp::plot(seg_x, seg_y);
-    // }
-
-    // matplotlibcpp::show();
-
-    matplotlibcpp::figure();
-    matplotlibcpp::plot(x, smoothed_data);
-
-    for (const auto& s : segs) {
-        std::vector<double> seg_x, seg_y;
-        for (int i = s.start; i <= s.end; ++i) {
-            seg_x.push_back(i * dt);
-            seg_y.push_back(smoothed_data[i]);
-        }
-        matplotlibcpp::plot(seg_x, seg_y);
-    }
-
-    matplotlibcpp::title(title);
-
-    std::filesystem::create_directory("output");
-    matplotlibcpp::save("output/" + title + ".png");
-}
-
 void Handseg::get_quaternion_tracks_from_fbx(const std::string& fbx_file, const std::vector<std::string>& bone_filter, std::vector<JointTrack>& out_tracks, double& out_fps)
 {
     // Load the FBX file
@@ -80,12 +27,10 @@ void Handseg::get_quaternion_tracks_from_fbx(const std::string& fbx_file, const 
     std::vector<JointTrack> tracks;
     int num_fingers = Anim::get_bones_from_scene(scene, bone_filter, &nodes, &tracks);
     if (num_fingers == 0) {
-        // std::puts("No finger bones found, please adjust the filter.");
         printf("No finger bones found in %s, please adjust the filter.\n", fbx_file.c_str());
         ufbx_free_scene(scene);
         return;
     }
-    printf("Found %d finger bones in %s.\n", num_fingers, fbx_file.c_str());
 
     // Sample the joint tracks for each finger bone
     const ufbx_anim* anim = scene->anim;
@@ -97,7 +42,7 @@ void Handseg::get_quaternion_tracks_from_fbx(const std::string& fbx_file, const 
     ufbx_free_scene(scene);
 }
 
-std::tuple<std::vector<Segment>, std::vector<Segment>> Handseg::get_segments(const std::string& fbx_file, bool save_to_csv, bool plot)
+std::tuple<std::vector<Segment>, std::vector<Segment>> Handseg::get_segments(const std::string& fbx_file, bool save_to_csv)
 {
     // Load config data from config.json
     Config config = Config::load_from_file("config.json");
@@ -144,8 +89,8 @@ std::tuple<std::vector<Segment>, std::vector<Segment>> Handseg::get_segments(con
     Math::smooth_values(smoothed_left_data, config.smooth_segment_values_sigma);
 
     // Segment the handshapes based on speed thresholds
-    std::vector<Segment> right_segs = Math::segment_handshapes_by_acceleration(smoothed_right_data, config.acceleration_threshold_factor, config.min_segment_length);
-    std::vector<Segment> left_segs = Math::segment_handshapes_by_acceleration(smoothed_left_data, config.acceleration_threshold_factor, config.min_segment_length);
+    std::vector<Segment> right_segs = Math::segment_handshapes_by_acceleration(smoothed_right_data, config.acceleration_threshold_factor, config.min_segment_length, config.min_acceleration_threshold);
+    std::vector<Segment> left_segs = Math::segment_handshapes_by_acceleration(smoothed_left_data, config.acceleration_threshold_factor, config.min_segment_length, config.min_acceleration_threshold);
 
     if (save_to_csv) {
         std::filesystem::create_directory("output");
@@ -154,11 +99,12 @@ std::tuple<std::vector<Segment>, std::vector<Segment>> Handseg::get_segments(con
         for (const auto& s : left_segs) csv_file << "left," << s.start << "," << s.end << "\n";
         for (const auto& s : right_segs) csv_file << "right," << s.start << "," << s.end << "\n";
         csv_file.close();
-    }
 
-    if (plot) {
-        plot_acceleration(smoothed_right_data, dt, right_segs, "Right_Hand_Acceleration");
-        plot_acceleration(smoothed_left_data, dt, left_segs, "Left_Hand_Acceleration");
+        std::ofstream csv_file2("output/handshape_acceleration.csv");
+        csv_file2 << "hand,hand_index,time,acceleration\n";
+        for (size_t i = 0; i < smoothed_right_data.size(); ++i) csv_file2 << "right," << i << "," << i * dt << "," << smoothed_right_data[i] << "\n";
+        for (size_t i = 0; i < smoothed_left_data.size(); ++i) csv_file2 << "left," << i << "," << i * dt << "," << smoothed_left_data[i] << "\n";
+        csv_file2.close();
     }
 
     return {left_segs, right_segs};

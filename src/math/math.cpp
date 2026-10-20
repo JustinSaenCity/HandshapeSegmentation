@@ -153,7 +153,7 @@ std::vector<Segment> Math::segment_handshapes(const std::vector<double>& values,
 
 struct Extremum { int index; bool is_peak; };
 
-std::vector<Segment> Math::segment_handshapes_by_acceleration(const std::vector<double>& acc, double threshold_factor, int min_len)
+std::vector<Segment> Math::segment_handshapes_by_acceleration(const std::vector<double>& acc, double threshold_factor, int min_len, const double min_threshold)
 {
     std::vector<Segment> segments;
     const int n = static_cast<int>(acc.size());
@@ -163,7 +163,9 @@ std::vector<Segment> Math::segment_handshapes_by_acceleration(const std::vector<
     double mean = std::accumulate(acc.begin(), acc.end(), 0.0) / n;
     double var = 0.0;
     for (double cur_a : acc) var += (cur_a - mean) * (cur_a - mean);
-    const double threshold = threshold_factor * std::sqrt(var / n);
+    const double dynamic_threshold = threshold_factor * std::sqrt(var / n);
+
+    const double threshold = std::max(dynamic_threshold, min_threshold);
 
     // Detect all extrema above the threshold
     std::vector<Extremum> found;
@@ -185,7 +187,7 @@ std::vector<Segment> Math::segment_handshapes_by_acceleration(const std::vector<
             extrema.push_back(cur_extremum);
         }
     }
-    if (extrema.empty()) return segments;
+    if (extrema.empty()) return {{0, n - 1}};  // If no extrema were found, it is one long segment
 
     // Helper function to add a segment if it meets the minimum length requirement
     auto add = [&](int start, int end) {

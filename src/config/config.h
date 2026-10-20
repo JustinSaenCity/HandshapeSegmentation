@@ -15,6 +15,7 @@ struct Config {
     std::string handshape_right_hand_filter;
     std::string handshape_left_hand_filter;
     int min_segment_length;
+    double min_acceleration_threshold;
     SegmentBy segment_by;
     double smooth_segment_values_sigma;
     double acceleration_threshold_factor;
@@ -36,6 +37,7 @@ struct Config {
         config.handshape_right_hand_filter = j.at("handshape_right_hand_filter").get<std::string>();
         config.handshape_left_hand_filter = j.at("handshape_left_hand_filter").get<std::string>();
         config.min_segment_length = j.at("min_segment_length").get<int>();
+        config.min_acceleration_threshold = j.at("min_acceleration_threshold").get<double>();
         config.segment_by = static_cast<SegmentBy>(j.at("segment_by").get<int>());
         config.smooth_segment_values_sigma = j.at("smooth_segment_values_sigma").get<double>();
         config.acceleration_threshold_factor = j.at("acceleration_threshold_factor").get<double>();
