@@ -1,6 +1,5 @@
 #include <ufbx.h>
 #include <Eigen/Geometry>
-#include <matplotlibcpp.h>
 
 #include <cstdio>
 #include <string>
@@ -17,61 +16,105 @@ using namespace anim;
 using namespace handseg;
 using namespace handshape;
 
+struct HandInfo {
+    std::string name;
+    Hand handshape;
+};
+
+void create_distance_matrix_from_handshapes(const std::vector<HandInfo>& handshapes, std::string output_file)
+{
+    int N = handshapes.size();
+    std::vector<std::vector<double>> distance_matrix(N, std::vector<double>(N, 0.0));
+
+    for (int i = 0; i < N; ++i) {
+        for (int j = i + 1; j < N; ++j) {
+            double distance = Handshape::pose_distance(handshapes[i].handshape, handshapes[j].handshape);
+            distance_matrix[i][j] = distance;
+            distance_matrix[j][i] = distance; // Symmetric
+        }
+    }
+
+    std::ofstream file(output_file);
+    if (!file.is_open()) {
+        throw std::runtime_error("Could not open output file: " + output_file);
+    }
+
+    // Write header
+    file << "Name";
+    for (const auto& handshape_info : handshapes) {
+        file << "," << handshape_info.name;
+    }
+
+    file << "\n";
+
+    // Write distance matrix
+    for (int i = 0; i < N; ++i) {
+        file << handshapes[i].name;  // Write the name of the handshape
+        for (int j = 0; j < N; ++j) {
+            file << "," << distance_matrix[i][j];
+        }
+        file << "\n";
+    }
+
+    file.close();
+}
+
 int main(int argc, char** argv)
 {
     if (argc < 2) { std::puts("Usage: .\\handseg.exe <file.fbx>"); return 1; }
 
-    auto segs = Handseg::get_segments(argv, true, true);
-
-    printf("Segmentation complete. Results saved to output/handshape_segments.csv and output/acceleration_plot.png\n");
+    std::vector<Segment> segs = std::get<1>(Handseg::get_segments(argv[1], true));
+    printf("Segmentation complete. Results saved to output/\n");
 
     //---------------------------------------------------------------------------------------------
-    // Load config
     Config config = Config::load_from_file("config.json");
 
-    // Load the quaternion tracks from the FBX file
-    double fps;
-    std::vector<JointTrack> tracks;
-    Handseg::get_quaternion_tracks_from_fbx(argv[1], config.bone_filter, tracks, fps);
-    if (tracks.empty()) return 1;
-
-    // Filter right hand tracks and apply preprocessing
-    std::vector<JointTrack> right_hand_quaternion_tracks;
-    for (const auto& tr : tracks)
-        if (tr.name.find("_r") != std::string::npos)
-            right_hand_quaternion_tracks.push_back(tr);
-
-    //---------------------------------------------------------------------------------------------
-    // LOAD ALL HANSHAPE FILES AND EXTRACT THEIR QUATERNION TRACKS
+    std::vector<std::string> fbx_files;
+    std::string fbx_dir = "fbx";
+    
+    // Get all fbx files from the fbx folder
+    for (const auto& entry : std::filesystem::directory_iterator(fbx_dir)) {
+        if (entry.is_regular_file() &&
+        (entry.path().extension().string() == ".fbx" || entry.path().extension().string() == ".FBX")) {
+            fbx_files.push_back(entry.path().string());
+        }
+    }
+    // Add handshape files from the handshapes folder
     std::vector<std::string> handshape_files = Handshape::get_all_handshape_files();
-    std::vector<Hand> handshapes_average_quaternion_tracks;
+    fbx_files.insert(fbx_files.end(), handshape_files.begin(), handshape_files.end());
 
-    for (const auto& file : handshape_files) {
+    // Get the (right) handshape data for each file
+    std::vector<HandInfo> handshapes_for_clustering;
+    for (const auto& file : fbx_files) {
         double handshape_fps;
         std::vector<JointTrack> handshape_tracks;
         Handseg::get_quaternion_tracks_from_fbx(file, config.bone_filter, handshape_tracks, handshape_fps);
         if (handshape_tracks.empty()) continue;
 
-        // Filter right hand tracks and apply preprocessing
+        // Filter right hand tracks
         std::vector<JointTrack> right_hand_tracks;
         for (const auto& tr : handshape_tracks)
-            if (tr.name.find("_r") != std::string::npos)
+            if (tr.name.find("RightHand") != std::string::npos)
                 right_hand_tracks.push_back(tr);
 
-        const Segment& segment = Segment(0, right_hand_tracks[0].q.size() - 1);
-        handshapes_average_quaternion_tracks.push_back(Handshape::get_average_handshape_from_segment(right_hand_tracks, segment));
+        // Process the tracks
+        for (JointTrack& quaternion_track : right_hand_tracks) { 
+            Math::align_quaternion_signs(quaternion_track.q);
+            Math::smooth_quaternions(quaternion_track.q, 2.0);
+        }
+
+        std::vector<Segment> segs = std::get<1>(Handseg::get_segments(file));
+
+        for (int i = 0; i < segs.size(); ++i) {
+            const Segment& segment = segs[i];
+            HandInfo average_handshape;
+            average_handshape.name = file + "_segment_" + std::to_string(i);
+            average_handshape.handshape = Handshape::get_average_handshape_from_segment(right_hand_tracks, segment);
+            handshapes_for_clustering.push_back(average_handshape);
+        }
     }
 
-    //---------------------------------------------------------------------------------------------
-    // MATCH THE INPUT HANDSHAPE TO THE PREDEFINED HANSHAPES
-    Hand average_input_handshape = Handshape::get_average_handshape_from_segment(right_hand_quaternion_tracks, segs[1]);
-    std::vector<Match> matches = Handshape::match_handshapes(handshapes_average_quaternion_tracks, average_input_handshape);
-
-    for (const Match& match : matches) {
-        std::string handshape_name = handshape_files[match.handshape_id];
-        double distance = match.distance;
-        printf("Handshape: %s, Distance: %.4f\n", handshape_name.c_str(), distance);
-    }
+    create_distance_matrix_from_handshapes(handshapes_for_clustering, "output/handshape_distance_matrix.csv");
 
     return 0;
 }
