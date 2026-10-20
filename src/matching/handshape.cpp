@@ -1,5 +1,7 @@
 #include <filesystem>
 
+#include "config/config.h"
+
 #include "handshape.h"
 
 using namespace math;
@@ -61,6 +63,63 @@ Hand Handshape::get_average_handshape_from_segment(const std::vector<JointTrack>
     }
 
     return average_handshape;
+}
+
+struct HandRepresentation {
+    double pinky_curl;
+    double pinky_spread;
+    double ring_curl;
+    double ring_spread;
+    double middle_curl;
+    double middle_spread;
+    double index_curl;
+    double index_spread;
+    double thumb_curl;
+    double thumb_spread;
+};
+
+HandRepresentation get_hand_representation(const Hand& hand) {
+    HandRepresentation rep;
+
+    const std::vector<std::string> finger_name_filter = {  // TODO: ZET ALLE FINGERBONES IN DE CONFIG
+        "Pinky", "Ring", "Middle", "Index", "Thumb"
+    };
+    std::vector<Eigen::Quaterniond> pinky_quats, ring_quats, middle_quats, index_quats, thumb_quats;
+    for (const std::string& finger_name : finger_name_filter) {
+        auto it = std::find(hand.joint_names.begin(), hand.joint_names.end(), finger_name);
+        if (it == hand.joint_names.end()) {
+            printf("Error: Finger name '%s' not found in hand joint names.\n", finger_name.c_str());
+            throw std::invalid_argument("Finger name not found in hand joint names.");
+        }
+        
+
+    }
+
+
+    auto calculate_curl = [](const Eigen::Quaterniond& q) {
+
+        return q.w();
+    };
+
+    auto calculate_spread = [](const Eigen::Quaterniond& q) {
+
+        return q.x();
+    };
+
+
+
+    rep.pinky_curl = calculate_curl(hand.joints[0]);
+    rep.pinky_spread = calculate_spread(hand.joints[0]);
+    rep.ring_curl = calculate_curl(hand.joints[1]);
+    rep.ring_spread = calculate_spread(hand.joints[1]);
+    rep.middle_curl = calculate_curl(hand.joints[2]);
+    rep.middle_spread = calculate_spread(hand.joints[2]);
+    rep.index_curl = calculate_curl(hand.joints[3]);
+    rep.index_spread = calculate_spread(hand.joints[3]);
+    rep.thumb_curl = calculate_curl(hand.joints[4]);
+    rep.thumb_spread = calculate_spread(hand.joints[4]);
+
+    return rep;
 }
 
 double Handshape::pose_distance(const Hand& shape1, const Hand& shape2) {
