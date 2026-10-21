@@ -8,17 +8,17 @@
 using json = nlohmann::json;
 
 struct Config {
-    std::vector<std::string> bone_filter;
-    std::string right_hand_filter;
-    std::string left_hand_filter;
-    std::vector<std::string> handshape_bone_filter;
-    std::string handshape_right_hand_filter;
-    std::string handshape_left_hand_filter;
-    int min_segment_length;
-    double min_acceleration_threshold;
-    SegmentBy segment_by;
-    double smooth_segment_values_sigma;
-    double acceleration_threshold_factor;
+    std::vector<std::string> segmentation_bones;
+    int segmentation_min_segment_length;
+    double segmentation_min_acceleration_threshold;
+    double segmentation_smoothing_sigma;
+    double segmentation_threshold_factor;
+
+    std::vector<std::string> matching_pinky_bones;
+    std::vector<std::string> matching_ring_bones;
+    std::vector<std::string> matching_middle_bones;
+    std::vector<std::string> matching_index_bones;
+    std::vector<std::string> matching_thumb_bones;
 
     static Config load_from_file(const std::string& filename) {
         std::ifstream file(filename);
@@ -30,17 +30,17 @@ struct Config {
         file >> j;
 
         Config config;
-        config.bone_filter = j.at("bone_filter").get<std::vector<std::string>>();
-        config.right_hand_filter = j.at("right_hand_filter").get<std::string>();
-        config.left_hand_filter = j.at("left_hand_filter").get<std::string>();
-        config.handshape_bone_filter = j.at("handshape_bone_filter").get<std::vector<std::string>>();
-        config.handshape_right_hand_filter = j.at("handshape_right_hand_filter").get<std::string>();
-        config.handshape_left_hand_filter = j.at("handshape_left_hand_filter").get<std::string>();
-        config.min_segment_length = j.at("min_segment_length").get<int>();
-        config.min_acceleration_threshold = j.at("min_acceleration_threshold").get<double>();
-        config.segment_by = static_cast<SegmentBy>(j.at("segment_by").get<int>());
-        config.smooth_segment_values_sigma = j.at("smooth_segment_values_sigma").get<double>();
-        config.acceleration_threshold_factor = j.at("acceleration_threshold_factor").get<double>();
+        config.segmentation_bones = j.at("segmentation_bones").get<std::vector<std::string>>();
+        config.segmentation_min_segment_length = j.at("segmentation_min_segment_length").get<int>();
+        config.segmentation_min_acceleration_threshold = j.at("segmentation_min_acceleration_threshold").get<double>();
+        config.segmentation_smoothing_sigma = j.at("segmentation_smoothing_sigma").get<double>();
+        config.segmentation_threshold_factor = j.at("segmentation_threshold_factor").get<double>();
+
+        config.matching_pinky_bones = j.at("matching_pinky_bones").get<std::vector<std::string>>();
+        config.matching_ring_bones = j.at("matching_ring_bones").get<std::vector<std::string>>();
+        config.matching_middle_bones = j.at("matching_middle_bones").get<std::vector<std::string>>();
+        config.matching_index_bones = j.at("matching_index_bones").get<std::vector<std::string>>();
+        config.matching_thumb_bones = j.at("matching_thumb_bones").get<std::vector<std::string>>();
 
         return config;
     }

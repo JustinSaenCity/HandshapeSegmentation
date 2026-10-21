@@ -26,10 +26,12 @@ int Anim::get_bones_from_scene(ufbx_scene* scene, const std::vector<std::string>
         return false;
     };
 
+    bool has_bone_filter = !bone_filter.empty();
+
     for (size_t i = 0; i < scene->nodes.count; ++i) {
         ufbx_node* node = scene->nodes.data[i];
         std::string name(node->name.data, node->name.length);
-        if (isInBoneFilter(name)) {
+        if (!has_bone_filter || isInBoneFilter(name)) {
             out_nodes->push_back(node);
             out_tracks->push_back({name, {}});
         }
@@ -37,10 +39,10 @@ int Anim::get_bones_from_scene(ufbx_scene* scene, const std::vector<std::string>
     return out_nodes->size();
 }
 
-void Anim::fill_joint_tracks(const ufbx_anim* anim, const std::vector<ufbx_node*>& nodes, std::vector<JointTrack>& out_tracks) {
+void Anim::fill_joint_tracks(const ufbx_anim* anim, const std::vector<ufbx_node*>& nodes, const double fps, std::vector<JointTrack>& out_tracks) {
     double t0 = anim->time_begin;
     double t1 = anim->time_end;
-    double dt = 1.0 / 24.0;  // TODO: PAS AAN ZODAT DIT NIET GEHARDCODED IS
+    double dt = 1.0 / fps;
 
     for (double t = t0; t <= t1; t += dt) {
         for (size_t j = 0; j < nodes.size(); ++j) {
