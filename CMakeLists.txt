@@ -20,15 +20,15 @@ add_library(ufbx_lib STATIC ${ufbx_SOURCE_DIR}/ufbx.c)
 target_include_directories(ufbx_lib PUBLIC ${ufbx_SOURCE_DIR})
 
 # Add the executable target and link libraries
-add_executable(handseg
+add_executable(shapeseg
               src/main.cpp
               src/anim/anim.cpp
               src/math/math.cpp
-              src/matching/handshape.cpp
-              src/handseg.cpp)
+              src/matching/poseshape.cpp
+              src/segmentation.cpp)
 
-target_link_libraries(handseg PRIVATE Eigen3::Eigen
+target_link_libraries(shapeseg PRIVATE Eigen3::Eigen
                       ufbx_lib
                       nlohmann_json::nlohmann_json)
 
-target_include_directories(handseg PRIVATE src)
+target_include_directories(shapeseg PRIVATE src)

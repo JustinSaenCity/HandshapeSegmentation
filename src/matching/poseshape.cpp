@@ -1,12 +1,12 @@
 #include <filesystem>
 
-#include "handshape.h"
+#include "poseshape.h"
 
 using namespace math;
 
-using namespace handshape;
+using namespace poseshape;
 
-std::vector<std::string> Handshape::get_all_handshape_files() {
+std::vector<std::string> Poseshape::get_all_handshape_files() {
     std::vector<std::string> handshape_files;
     std::string handshape_dir = "../HandformSession/2026-10-19/";
 
@@ -39,10 +39,10 @@ std::vector<std::string> get_all_handshape_files_old() {
     return handshape_files;
 }
 
-Hand Handshape::get_average_handshape_from_segment(const std::vector<JointTrack>& handshape_tracks, const Segment& segment) {
-    Hand average_handshape;
-    average_handshape.joint_names.reserve(handshape_tracks.size());
-    average_handshape.joints.reserve(handshape_tracks.size());
+Pose Poseshape::get_average_pose_from_segment(const std::vector<JointTrack>& handshape_tracks, const Segment& segment) {
+    Pose average_pose;
+    average_pose.joint_names.reserve(handshape_tracks.size());
+    average_pose.joints.reserve(handshape_tracks.size());
 
     // Since the hand may still be moving slightly after the acceleration maximum, take the middle 50% frames
     int segment_length = segment.end - segment.start + 1;
@@ -56,17 +56,17 @@ Hand Handshape::get_average_handshape_from_segment(const std::vector<JointTrack>
         }
         avg_quat.coeffs() /= static_cast<double>(end_frame - start_frame + 1);
         avg_quat.normalize();
-        average_handshape.joints.push_back(avg_quat);
-        average_handshape.joint_names.push_back(handshape_tracks[i].name);
+        average_pose.joints.push_back(avg_quat);
+        average_pose.joint_names.push_back(handshape_tracks[i].name);
     }
 
-    return average_handshape;
+    return average_pose;
 }
 
-double Handshape::pose_distance(const Hand& shape1, const Hand& shape2) {
+double Poseshape::pose_distance(const Pose& shape1, const Pose& shape2) {
     if (shape1.joints.size() != shape2.joints.size()) {
-        printf("Error: Handshapes must have the same number of quaternions. Shape1 has %zu, Shape2 has %zu\n", shape1.joints.size(), shape2.joints.size());
-        throw std::invalid_argument("Handshapes must have the same number of quaternions.");
+        printf("Error: Poses must have the same number of quaternions. Shape1 has %zu, Shape2 has %zu\n", shape1.joints.size(), shape2.joints.size());
+        throw std::invalid_argument("Poses must have the same number of quaternions.");
     }
 
     double angular_distance = 0.0;
@@ -78,10 +78,10 @@ double Handshape::pose_distance(const Hand& shape1, const Hand& shape2) {
     return angular_distance;
 }
 
-std::vector<Match> Handshape::match_handshapes(const std::vector<Hand>& handshapes, const Hand& input_shape) {
+std::vector<Match> Poseshape::match_poses(const std::vector<Pose>& poshes, const Pose& input_pose) {
     std::vector<Match> matches;
-    for (size_t i = 0; i < handshapes.size(); ++i) {
-        double distance = Handshape::pose_distance(handshapes[i], input_shape);
+    for (size_t i = 0; i < poshes.size(); ++i) {
+        double distance = Poseshape::pose_distance(poshes[i], input_pose);
         matches.push_back({static_cast<int>(i), distance});
     }
 

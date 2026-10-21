@@ -7,9 +7,9 @@
 #include "math/math.h"
 #include "anim/anim.h"
 
-namespace handseg
+namespace segmentation
 {
-    class Handseg
+    class Segmentation
     {
     public:
         static void get_quaternion_tracks_from_fbx(const std::string& fbx_file, const std::vector<std::string>& bone_filter, std::vector<JointTrack>& out_tracks, double& out_fps);

@@ -5,13 +5,13 @@
 
 #include "config/config.h"
 
-#include "handseg.h"
+#include "segmentation.h"
 
 using namespace math;
 using namespace anim;
-using namespace handseg;
+using namespace segmentation;
 
-void Handseg::get_quaternion_tracks_from_fbx(const std::string& fbx_file, const std::vector<std::string>& bone_filter, std::vector<JointTrack>& out_tracks, double& out_fps)
+void Segmentation::get_quaternion_tracks_from_fbx(const std::string& fbx_file, const std::vector<std::string>& bone_filter, std::vector<JointTrack>& out_tracks, double& out_fps)
 {
     // Load the FBX file
     ufbx_error error;
@@ -40,7 +40,7 @@ void Handseg::get_quaternion_tracks_from_fbx(const std::string& fbx_file, const 
     ufbx_free_scene(scene);
 }
 
-std::vector<Segment> Handseg::get_segments(const std::vector<JointTrack>& tracks, const double fps, 
+std::vector<Segment> Segmentation::get_segments(const std::vector<JointTrack>& tracks, const double fps, 
                                            const std::string& config_file, bool save_to_csv)
 {
     // Load config data from config.json
@@ -91,10 +91,10 @@ std::vector<Segment> Handseg::get_segments(const std::vector<JointTrack>& tracks
     return segments;
 }
 
-std::vector<std::tuple<int,int>> Handseg::get_segments_as_tuples(const std::vector<JointTrack>& tracks, const double fps, 
+std::vector<std::tuple<int,int>> Segmentation::get_segments_as_tuples(const std::vector<JointTrack>& tracks, const double fps, 
                                                                  const std::string& config_file, bool save_to_csv)
 {
-    std::vector<Segment> segments = Handseg::get_segments(tracks, fps, config_file);
+    std::vector<Segment> segments = Segmentation::get_segments(tracks, fps, config_file);
     std::vector<std::tuple<int,int>> segments_as_tuples;
 
     for (const auto& s : segments) segments_as_tuples.push_back(std::make_tuple(s.start, s.end));

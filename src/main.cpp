@@ -8,27 +8,27 @@
 #include "math/math.h"
 #include "anim/anim.h"
 #include "config/config.h"
-#include "matching/handshape.h"
-#include "handseg.h"
+#include "matching/poseshape.h"
+#include "segmentation.h"
 
 using namespace math;
 using namespace anim;
-using namespace handseg;
-using namespace handshape;
+using namespace segmentation;
+using namespace poseshape;
 
-struct HandInfo {
+struct PoseInfo {
     std::string name;
-    Hand handshape;
+    Pose handshape;
 };
 
-void create_distance_matrix_from_handshapes(const std::vector<HandInfo>& handshapes, std::string output_file)
+void create_distance_matrix_from_handshapes(const std::vector<PoseInfo>& handshapes, std::string output_file)
 {
     int N = handshapes.size();
     std::vector<std::vector<double>> distance_matrix(N, std::vector<double>(N, 0.0));
 
     for (int i = 0; i < N; ++i) {
         for (int j = i + 1; j < N; ++j) {
-            double distance = Handshape::pose_distance(handshapes[i].handshape, handshapes[j].handshape);
+            double distance = Poseshape::pose_distance(handshapes[i].handshape, handshapes[j].handshape);
             distance_matrix[i][j] = distance;
             distance_matrix[j][i] = distance; // Symmetric
         }
@@ -66,10 +66,10 @@ int main(int argc, char** argv)
     // Get the quaternion tracks from the FBX file
     double fps;
     std::vector<JointTrack> tracks;
-    Handseg::get_quaternion_tracks_from_fbx(argv[1], {}, tracks, fps);
+    Segmentation::get_quaternion_tracks_from_fbx(argv[1], {}, tracks, fps);
 
     // Get the segments from the quaternion tracks
-    std::vector<Segment> segments = Handseg::get_segments(tracks, fps, "config.json", true);
+    std::vector<Segment> segments = Segmentation::get_segments(tracks, fps, "config.json", true);
 
     // std::vector<Segment> segs = std::get<1>(Handseg::get_segments(argv[1], true));
     printf("Segmentation complete. Results saved to output/\n");
