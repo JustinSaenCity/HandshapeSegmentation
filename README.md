@@ -4,11 +4,11 @@
 
 1. Install [CMake](https://cmake.org/download/) and add it to your `PATH` environment variable.
 2. Install [vcpkg](https://learn.microsoft.com/en-us/vcpkg/get_started/get-started?pivots=shell-powershell) and set the `VCPKG_ROOT` environment variable to its install directory.
-3. Install [Python 3.12](https://www.python.org/downloads/) and add it to your `PATH` environment variable.
-4. Install the required Python packages:
+3. (optional) Install [Python 3.12](https://www.python.org/downloads/) (other versions may work).
+4. (optional) Install the required Python packages:
 
 ```bash
-   py -m pip install matplotlib numpy
+   py -m pip install numpy pandas scikit-learn plotly
 ```
 5. Clone this repository
 6. Build the project:
