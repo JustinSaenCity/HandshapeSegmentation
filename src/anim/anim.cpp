@@ -22,7 +22,7 @@ bool Anim::load_fbx_scene(const char* filename, ufbx_scene** out_scene) {
 int Anim::get_bones_from_scene(ufbx_scene* scene, const std::vector<std::string>& bone_filter, std::vector<ufbx_node*>* out_nodes, std::vector<JointTrack>* out_tracks) {
     auto isInBoneFilter = [bone_filter](const std::string& n) {
         for (const std::string& key : bone_filter)
-            if (n.find(key) != std::string::npos) return true;
+            if (n == key) return true;
         return false;
     };
 
@@ -48,7 +48,7 @@ void Anim::fill_joint_tracks(const ufbx_anim* anim, const std::vector<ufbx_node*
         for (size_t j = 0; j < nodes.size(); ++j) {
             ufbx_transform tr = ufbx_evaluate_transform(anim, nodes[j], t);
             out_tracks[j].q.emplace_back(tr.rotation.w, tr.rotation.x,
-                                         tr.rotation.y, tr.rotation.z);
+                tr.rotation.y, tr.rotation.z);
         }
     }
 }

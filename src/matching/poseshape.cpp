@@ -8,18 +8,13 @@ using namespace poseshape;
 
 std::vector<std::string> Poseshape::get_all_handshape_files() {
     std::vector<std::string> handshape_files;
-    std::string handshape_dir = "../HandformSession/2026-10-19/";
+    std::string handshape_dir = "../HandformSession/HandformsTrimmed/";
 
     // Go through all folders, in the folder get the fbx file located in unreal/Vicon/
     for (const auto& entry : std::filesystem::directory_iterator(handshape_dir)) {
-        if (entry.is_directory()) {
-            std::string unreal_vicon_path = entry.path().string() + "/unreal/Vicon/";
-            for (const auto& sub_entry : std::filesystem::directory_iterator(unreal_vicon_path)) {
-                if (sub_entry.is_regular_file() &&
-                    (sub_entry.path().extension().string() == ".fbx" || sub_entry.path().extension().string() == ".FBX")) {
-                    handshape_files.push_back(sub_entry.path().string());
-                }
-            }
+        if (entry.is_regular_file() &&
+            (entry.path().extension().string() == ".fbx" || entry.path().extension().string() == ".FBX")) {
+            handshape_files.push_back(entry.path().string());
         }
     }
     return handshape_files;

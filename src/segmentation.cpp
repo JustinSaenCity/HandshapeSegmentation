@@ -52,7 +52,7 @@ std::vector<SegmentData> Segmentation::get_segments(const std::vector<JointTrack
     std::vector<JointTrack> filtered_tracks;
     for (const JointTrack& tr : tracks) {
         for (const std::string& bone : config.segmentation_bones) {
-            if (tr.name.find(bone) != std::string::npos) {
+            if (tr.name == bone) {
                 filtered_tracks.push_back(tr);
                 break;
             }
@@ -112,7 +112,7 @@ std::vector<SegmentData> Segmentation::get_segments(const std::vector<JointTrack
 std::vector<std::tuple<int,int>> Segmentation::get_segments_as_tuples(const std::vector<JointTrack>& tracks, const double fps, 
                                                                  const std::string& config_file, bool save_to_csv)
 {
-    std::vector<SegmentData> segments = Segmentation::get_segments(tracks, fps, config_file);
+    std::vector<SegmentData> segments = Segmentation::get_segments(tracks, fps, config_file, save_to_csv);
     std::vector<std::tuple<int,int>> segments_as_tuples;
 
     for (const auto& s : segments) segments_as_tuples.push_back(std::make_tuple(s.segment.start, s.segment.end));
