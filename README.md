@@ -27,6 +27,19 @@ TODO
 .\build\Release\handseg.exe <path_to_fbx_file>
 ```
 
+or get segmentation data through the C++ function in `src/segmentation.h`:
+
+```cpp
+#include "segmentation.h"
+
+int main() {
+   double fps;
+   std::vector<JointTrack> tracks;
+   Segmentation::get_quaternion_tracks_from_fbx("path/to/file.fbx", {}, tracks, fps);
+   std::vector<SegmentData> segments = Segmentation::get_segments(tracks, fps, "path/to/config.json");
+}
+```
+
 ## Troubleshooting
 
 #### **The program exits immediately without output.**
