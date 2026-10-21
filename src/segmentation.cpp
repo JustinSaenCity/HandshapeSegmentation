@@ -4,12 +4,14 @@
 #include <cstdio>
 
 #include "config/config.h"
+#include "matching/poseshape.h"
 
 #include "segmentation.h"
 
 using namespace math;
 using namespace anim;
 using namespace segmentation;
+using namespace poseshape;
 
 void Segmentation::get_quaternion_tracks_from_fbx(const std::string& fbx_file, const std::vector<std::string>& bone_filter, std::vector<JointTrack>& out_tracks, double& out_fps)
 {
@@ -40,7 +42,7 @@ void Segmentation::get_quaternion_tracks_from_fbx(const std::string& fbx_file, c
     ufbx_free_scene(scene);
 }
 
-std::vector<Segment> Segmentation::get_segments(const std::vector<JointTrack>& tracks, const double fps, 
+std::vector<SegmentData> Segmentation::get_segments(const std::vector<JointTrack>& tracks, const double fps, 
                                            const std::string& config_file, bool save_to_csv)
 {
     // Load config data from config.json
@@ -75,11 +77,27 @@ std::vector<Segment> Segmentation::get_segments(const std::vector<JointTrack>& t
     std::vector<Segment> segments = Math::segment_handshapes_by_acceleration(smoothed_data, config.segmentation_threshold_factor,
                                     config.segmentation_min_segment_length, config.segmentation_min_acceleration_threshold);
 
+    // Get average handshape for each segment
+    std::vector<SegmentData> segment_data_list;
+    for (const auto& s : segments) {
+        Pose average_pose = Poseshape::get_average_pose_from_segment(filtered_tracks, s);
+        segment_data_list.push_back({s, average_pose});        
+    }
+
     if (save_to_csv) {
         std::filesystem::create_directory("output");
         std::ofstream csv_file("output/handshape_segments.csv");
-        csv_file << "start,end\n";
-        for (const auto& s : segments) csv_file << s.start << "," << s.end << "\n";
+        csv_file << "start,end,average_pose\n";
+        for (const auto& s : segment_data_list) {
+            csv_file << s.segment.start << "," << s.segment.end << ",";
+            for (int i = 0; i < s.average_pose.joints.size(); ++i) {
+                const std::string& joint_name = s.average_pose.joint_names[i];
+                csv_file << joint_name << ":";
+                const Eigen::Quaterniond& q = s.average_pose.joints[i];
+                csv_file << q.w() << " " << q.x() << " " << q.y() << " " << q.z() << ";";
+            }
+            csv_file << "\n";
+        }
         csv_file.close();
 
         std::ofstream csv_file2("output/handshape_acceleration.csv");
@@ -88,16 +106,16 @@ std::vector<Segment> Segmentation::get_segments(const std::vector<JointTrack>& t
         csv_file2.close();
     }
     
-    return segments;
+    return segment_data_list;
 }
 
 std::vector<std::tuple<int,int>> Segmentation::get_segments_as_tuples(const std::vector<JointTrack>& tracks, const double fps, 
                                                                  const std::string& config_file, bool save_to_csv)
 {
-    std::vector<Segment> segments = Segmentation::get_segments(tracks, fps, config_file);
+    std::vector<SegmentData> segments = Segmentation::get_segments(tracks, fps, config_file);
     std::vector<std::tuple<int,int>> segments_as_tuples;
 
-    for (const auto& s : segments) segments_as_tuples.push_back(std::make_tuple(s.start, s.end));
+    for (const auto& s : segments) segments_as_tuples.push_back(std::make_tuple(s.segment.start, s.segment.end));
     
     return segments_as_tuples;
 }

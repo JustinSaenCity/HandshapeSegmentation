@@ -1,9 +1,11 @@
 #pragma once
 
 #include <Eigen/Geometry>
+#include <vector>
 
-struct Segment { int start, end; 
-                };
+struct Segment { 
+    int start, end;
+};
 
 
 namespace math

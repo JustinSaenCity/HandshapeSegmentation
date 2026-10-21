@@ -69,7 +69,7 @@ int main(int argc, char** argv)
     Segmentation::get_quaternion_tracks_from_fbx(argv[1], {}, tracks, fps);
 
     // Get the segments from the quaternion tracks
-    std::vector<Segment> segments = Segmentation::get_segments(tracks, fps, "config.json", true);
+    std::vector<SegmentData> segments = Segmentation::get_segments(tracks, fps, "config.json", true);
 
     // std::vector<Segment> segs = std::get<1>(Handseg::get_segments(argv[1], true));
     printf("Segmentation complete. Results saved to output/\n");
