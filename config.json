@@ -22,9 +22,9 @@
     "segmentation_smoothing_sigma": 1.5,
     "segmentation_threshold_factor": 0.5,
 
-    "matching_pinky_bones": [],
-    "matching_ring_bones": [],
-    "matching_middle_bones": [],
-    "matching_index_bones": [],
-    "matching_thumb_bones": []
+    "matching_pinky_bones": ["RightHandPinky", "RightHandPinky1", "RightHandPinky2", "RightHandPinky3"],
+    "matching_ring_bones": ["RightHandRing", "RightHandRing1", "RightHandRing2", "RightHandRing3"],
+    "matching_middle_bones": ["RightHandMiddle", "RightHandMiddle1", "RightHandMiddle2", "RightHandMiddle3"],
+    "matching_index_bones": ["RightHandIndex", "RightHandIndex1", "RightHandIndex2", "RightHandIndex3"],
+    "matching_thumb_bones": ["RightHandThumb1", "RightHandThumb2", "RightHandThumb3"]
 }

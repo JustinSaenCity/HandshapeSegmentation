@@ -1,4 +1,5 @@
 #include <filesystem>
+#include <variant>
 
 #include "poseshape.h"
 
@@ -57,6 +58,22 @@ Pose Poseshape::get_average_pose_from_segment(const std::vector<JointTrack>& han
 
     return average_pose;
 }
+
+struct FingerRepresentation {
+    double curl;
+    double spread;
+};
+
+struct SingleRepresentation {
+    std::string representation_name;
+    std::variant<FingerRepresentation, Eigen::Quaterniond> representation;
+};
+
+struct PoseRepresentation {
+    std::vector<SingleRepresentation> finger_representations;
+};
+
+// TODO: Write function that converts config lists of combinatorial joints to its representation.
 
 double Poseshape::pose_distance(const Pose& shape1, const Pose& shape2) {
     if (shape1.joints.size() != shape2.joints.size()) {
