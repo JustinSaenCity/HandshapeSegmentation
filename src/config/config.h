@@ -7,6 +7,11 @@
 
 using json = nlohmann::json;
 
+struct BoneCombination {
+    bool IsFinger;
+    std::vector<std::string> Bones;
+};
+
 struct Config {
     std::vector<std::string> segmentation_bones;
     int segmentation_min_segment_length;
@@ -14,11 +19,7 @@ struct Config {
     double segmentation_smoothing_sigma;
     double segmentation_threshold_factor;
 
-    std::vector<std::string> matching_pinky_bones;
-    std::vector<std::string> matching_ring_bones;
-    std::vector<std::string> matching_middle_bones;
-    std::vector<std::string> matching_index_bones;
-    std::vector<std::string> matching_thumb_bones;
+    std::vector<BoneCombination> matching_bone_combinations;
 
     static Config load_from_file(const std::string& filename) {
         std::ifstream file(filename);
@@ -36,11 +37,12 @@ struct Config {
         config.segmentation_smoothing_sigma = j.at("segmentation_smoothing_sigma").get<double>();
         config.segmentation_threshold_factor = j.at("segmentation_threshold_factor").get<double>();
 
-        config.matching_pinky_bones = j.at("matching_pinky_bones").get<std::vector<std::string>>();
-        config.matching_ring_bones = j.at("matching_ring_bones").get<std::vector<std::string>>();
-        config.matching_middle_bones = j.at("matching_middle_bones").get<std::vector<std::string>>();
-        config.matching_index_bones = j.at("matching_index_bones").get<std::vector<std::string>>();
-        config.matching_thumb_bones = j.at("matching_thumb_bones").get<std::vector<std::string>>();
+        for (const auto& item : j.at("matching_bone_combinations")) {
+            BoneCombination combination;
+            combination.IsFinger = item.at("IsFinger").get<bool>();
+            combination.Bones = item.at("Bones").get<std::vector<std::string>>();
+            config.matching_bone_combinations.push_back(combination);
+        }
 
         return config;
     }

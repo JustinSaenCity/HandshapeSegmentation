@@ -119,5 +119,22 @@ int main(int argc, char** argv)
 
     create_distance_matrix_from_handshapes(handshapes_for_clustering, "output/handshape_distance_matrix.csv");
 
+    std::vector<Pose> poses_for_matching;
+    for (const PoseInfo& info : handshapes_for_clustering) {
+        poses_for_matching.push_back(info.handshape);
+    }
+    std::vector<Match> matches = Poseshape::match_poses(poses_for_matching, handshapes_for_clustering[4].handshape);
+
+    for (int i = 0; i < std::min(10, static_cast<int>(matches.size())); ++i) {
+        std::printf("Handshape: %s\n", handshapes_for_clustering[i].name.c_str());
+    }
+
+    // Print names of top 10 matches
+    std::printf("Top 10 matches for %s:\n", handshapes_for_clustering[4].name.c_str());
+    for (int i = 0; i < std::min(10, static_cast<int>(matches.size())); ++i) {
+        const Match& match = matches[i];
+        std::printf("%d: %s (distance: %.4f)\n", i + 1, handshapes_for_clustering[match.handshape_id].name.c_str(), match.distance);
+    }
+
     return 0;
 }
