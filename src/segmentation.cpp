@@ -43,7 +43,7 @@ void Segmentation::get_quaternion_tracks_from_fbx(const std::string& fbx_file, c
 }
 
 std::vector<SegmentData> Segmentation::get_segments(const std::vector<JointTrack>& tracks, const double fps, 
-                                           const std::string& config_file, bool save_to_csv)
+                                           const std::string& config_file, bool save_to_csv, bool take_middle_50_percent)
 {
     // Load config data from the config file
     Config config = Config::load_from_file(config_file);
@@ -80,7 +80,7 @@ std::vector<SegmentData> Segmentation::get_segments(const std::vector<JointTrack
     // Get average handshape for each segment
     std::vector<SegmentData> segment_data_list;
     for (const auto& s : segments) {
-        Pose average_pose = Poseshape::get_average_pose_from_segment(filtered_tracks, s);
+        Pose average_pose = Poseshape::get_average_pose_from_segment(filtered_tracks, s, take_middle_50_percent);
         segment_data_list.push_back({s, average_pose});        
     }
 
