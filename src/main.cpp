@@ -7,7 +7,7 @@
 
 #include "math/math.h"
 #include "anim/anim.h"
-#include "config/config.h"
+#include "config/segmentation_config.h"
 #include "matching/poseshape.h"
 #include "segmentation.h"
 
@@ -70,13 +70,13 @@ int main(int argc, char** argv)
     printf("Loaded %zu quaternion tracks from %s at %.2f fps\n", tracks.size(), argv[1], fps);
 
     // Get the segments from the quaternion tracks
-    std::vector<SegmentData> segments = Segmentation::get_segments(tracks, fps, "config.json", true);
+    std::vector<SegmentData> segments = Segmentation::get_segments(tracks, fps, "./segmentation_config.json", true);
 
     // std::vector<Segment> segs = std::get<1>(Handseg::get_segments(argv[1], true));
     printf("Segmentation complete. Results saved to output/\n");
 
     //---------------------------------------------------------------------------------------------
-    Config config = Config::load_from_file("config.json");
+    Config config = Config::load_from_file("segmentation_config.json");
 
     std::vector<std::string> fbx_files;
     std::string fbx_dir = "fbx";
@@ -97,7 +97,7 @@ int main(int argc, char** argv)
     for (const auto& file : fbx_files) {
         double handshape_fps;
         std::vector<JointTrack> handshape_tracks;
-        Segmentation::get_quaternion_tracks_from_fbx(file, config.segmentation_bones, handshape_tracks, handshape_fps);
+        Segmentation::get_quaternion_tracks_from_fbx(file, config.bones, handshape_tracks, handshape_fps);
         if (handshape_tracks.empty()) continue;
 
         // Process the tracks
@@ -106,7 +106,7 @@ int main(int argc, char** argv)
             Math::smooth_quaternions(quaternion_track.q, 2.0);
         }
 
-        std::vector<SegmentData> segs = Segmentation::get_segments(handshape_tracks, handshape_fps, "config.json", false);
+        std::vector<SegmentData> segs = Segmentation::get_segments(handshape_tracks, handshape_fps, "segmentation_config.json", false);
 
         for (int i = 0; i < segs.size(); ++i) {
             const SegmentData& segment = segs[i];

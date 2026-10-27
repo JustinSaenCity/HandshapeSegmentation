@@ -1,7 +1,6 @@
 #include <cstdio>
 
 #include "anim.h"
-#include "config/config.h"
 
 using namespace anim;
 

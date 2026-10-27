@@ -42,18 +42,10 @@ int main() {
 
 ## Troubleshooting
 
-#### **The program exits immediately without output.**
+#### **The program doesn't build.**
 
-Windows cannot find `python312.dll`. Add the Python install directory to your `PATH` environment variable. You can check which Python version CMake found by running:
-
-```bash
-py -c "import sys; print(sys.executable)"
-```
+Before running the build-clean script, manually delete the `build` folder.
 
 #### **`vcpkg install` fails or CMake cannot find the toolchain file.**
 
 Check that `VCPKG_ROOT` is set and restart your terminal (or IDE).
-
-#### **Plotting fails with a Python error.**
-
-Make sure `matplotlib` and `numpy` are installed for the same Python version that CMake found.

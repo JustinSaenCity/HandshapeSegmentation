@@ -3,7 +3,7 @@
 
 #include <cstdio>
 
-#include "config/config.h"
+#include "config/segmentation_config.h"
 #include "matching/poseshape.h"
 
 #include "segmentation.h"
@@ -45,13 +45,13 @@ void Segmentation::get_quaternion_tracks_from_fbx(const std::string& fbx_file, c
 std::vector<SegmentData> Segmentation::get_segments(const std::vector<JointTrack>& tracks, const double fps, 
                                            const std::string& config_file, bool save_to_csv)
 {
-    // Load config data from config.json
+    // Load config data from the config file
     Config config = Config::load_from_file(config_file);
 
     // Filter tracks by only taking bones that are listed in the config file
     std::vector<JointTrack> filtered_tracks;
     for (const JointTrack& tr : tracks) {
-        for (const std::string& bone : config.segmentation_bones) {
+        for (const std::string& bone : config.bones) {
             if (tr.name == bone) {
                 filtered_tracks.push_back(tr);
                 break;
@@ -71,11 +71,11 @@ std::vector<SegmentData> Segmentation::get_segments(const std::vector<JointTrack
     for (const JointTrack& tr : filtered_tracks) quaternion_tracks_only.push_back(tr.q);
     std::vector<double> aggregate_data = Math::aggregate_quaternion_data(quaternion_tracks_only, dt);
     std::vector<double> smoothed_data = aggregate_data;
-    Math::smooth_values(smoothed_data, config.segmentation_smoothing_sigma);
+    Math::smooth_values(smoothed_data, config.smoothing_sigma);
 
     // Segment the data based on acceleration
-    std::vector<Segment> segments = Math::segment_handshapes_by_acceleration(smoothed_data, config.segmentation_threshold_factor,
-                                    config.segmentation_min_segment_length, config.segmentation_min_acceleration_threshold);
+    std::vector<Segment> segments = Math::segment_handshapes_by_acceleration(smoothed_data, config.threshold_factor,
+                                    config.min_segment_length, config.min_acceleration_threshold);
 
     // Get average handshape for each segment
     std::vector<SegmentData> segment_data_list;
@@ -105,7 +105,7 @@ std::vector<SegmentData> Segmentation::get_segments(const std::vector<JointTrack
         for (size_t i = 0; i < smoothed_data.size(); ++i) csv_file2 << i << "," << i * dt << "," << smoothed_data[i] << "\n";
         csv_file2.close();
     }
-    
+
     return segment_data_list;
 }
 
