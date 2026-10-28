@@ -58,6 +58,91 @@ Pose Poseshape::get_average_pose_from_segment(const std::vector<JointTrack>& han
     return average_pose;
 }
 
+std::vector<double> quaternions_to_vector(const std::vector<Eigen::Quaterniond>& quaternions) {
+    std::vector<double> vec;
+    vec.reserve(quaternions.size() * 4);
+    for (const auto& q : quaternions) {
+        vec.push_back(q.w());
+        vec.push_back(q.x());
+        vec.push_back(q.y());
+        vec.push_back(q.z());
+    }
+    return vec;
+}
+
+std::vector<double> quaternions_to_euler_vector(const std::vector<Eigen::Quaterniond>& quaternions) {
+    std::vector<double> vec;
+    vec.reserve(quaternions.size() * 3);
+
+    for (const auto& quat : quaternions) {
+        // Get Euler angles from quaternion
+        Eigen::Vector3d euler_angles = quat.toRotationMatrix().eulerAngles(0, 1, 2);  // Roll (X), Pitch (Y), Yaw (Z)
+        vec.push_back(euler_angles.x());
+        vec.push_back(euler_angles.y());
+        vec.push_back(euler_angles.z());
+    }
+
+    return vec;
+}
+
+std::vector<double> quaternions_to_relevant_euler_vector(const std::vector<Eigen::Quaterniond>& quaternions) {
+    std::vector<double> vec;
+    vec.reserve(quaternions.size() * 3);
+
+    for (const auto& quat : quaternions) {
+        // Get Euler angles from quaternion
+        Eigen::Vector3d euler_angles = quat.toRotationMatrix().eulerAngles(0, 1, 2);  // Roll (X), Pitch (Y), Yaw (Z)
+        vec.push_back(euler_angles.x());
+    }
+
+    return vec;
+}
+
+double get_cosine_similarity(const std::vector<double>& vec1, const std::vector<double>& vec2) {
+    if (vec1.size() != vec2.size()) {
+        throw std::invalid_argument("Vectors must be of the same size for cosine similarity.");
+    }
+
+    double dot_product = 0.0;
+    double norm_vec1 = 0.0;
+    double norm_vec2 = 0.0;
+
+    for (size_t i = 0; i < vec1.size(); ++i) {
+        dot_product += vec1[i] * vec2[i];
+        norm_vec1 += vec1[i] * vec1[i];
+        norm_vec2 += vec2[i] * vec2[i];
+    }
+
+    return dot_product / (std::sqrt(norm_vec1) * std::sqrt(norm_vec2));
+}
+
+double get_euclidean_distance(const std::vector<double>& vec1, const std::vector<double>& vec2) {
+    if (vec1.size() != vec2.size()) {
+        throw std::invalid_argument("Vectors must be of the same size for Euclidean distance.");
+    }
+
+    double sum_squared_diff = 0.0;
+    for (size_t i = 0; i < vec1.size(); ++i) {
+        double diff = vec1[i] - vec2[i];
+        sum_squared_diff += diff * diff;
+    }
+
+    return std::sqrt(sum_squared_diff);
+}
+
+double get_manhattan_distance(const std::vector<double>& vec1, const std::vector<double>& vec2) {
+    if (vec1.size() != vec2.size()) {
+        throw std::invalid_argument("Vectors must be of the same size for Manhattan distance.");
+    }
+
+    double sum_abs_diff = 0.0;
+    for (size_t i = 0; i < vec1.size(); ++i) {
+        sum_abs_diff += std::abs(vec1[i] - vec2[i]);
+    }
+
+    return sum_abs_diff;
+}
+
 double Poseshape::pose_distance(const Pose& shape1, const Pose& shape2) {
     if (shape1.joints.size() != shape2.joints.size()) {
         printf("Error: Poses must have the same number of quaternions. Shape1 has %zu, Shape2 has %zu\n", shape1.joints.size(), shape2.joints.size());
@@ -71,37 +156,22 @@ double Poseshape::pose_distance(const Pose& shape1, const Pose& shape2) {
     // angular_distance /= static_cast<double>(shape1.joints.size());
 
     // Cosine distance between shapes
-    std::vector<double> shape1_vec, shape2_vec;
-    for (size_t i = 0; i < shape1.joints.size(); ++i) {
-        Eigen::Quaterniond q1 = shape1.joints[i];
-        Eigen::Quaterniond q2 = shape2.joints[i];
-
-        // Convert quaternions to 4D vectors
-        shape1_vec.push_back(q1.w());
-        shape1_vec.push_back(q1.x());
-        shape1_vec.push_back(q1.y());
-        shape1_vec.push_back(q1.z());
-
-        shape2_vec.push_back(q2.w());
-        shape2_vec.push_back(q2.x());
-        shape2_vec.push_back(q2.y());
-        shape2_vec.push_back(q2.z());
-    }
+    // std::vector<double> shape1_vec = quaternions_to_vector(shape1.joints);
+    // std::vector<double> shape2_vec = quaternions_to_vector(shape2.joints);
+    std::vector<double> shape1_vec = quaternions_to_relevant_euler_vector(shape1.joints);
+    std::vector<double> shape2_vec = quaternions_to_relevant_euler_vector(shape2.joints);
 
     // Compute cosine similarity
-    double dot_product = 0.0;
-    double norm_shape1 = 0.0;
-    double norm_shape2 = 0.0;
-    for (size_t i = 0; i < shape1_vec.size(); ++i) {
-        dot_product += shape1_vec[i] * shape2_vec[i];
-        norm_shape1 += shape1_vec[i] * shape1_vec[i];
-        norm_shape2 += shape2_vec[i] * shape2_vec[i];
-    }
+    double cosine_similarity = get_cosine_similarity(shape1_vec, shape2_vec);
+    double cosine_distance = 1.0 - cosine_similarity;  // Convert similarity to distance
 
-    double cosine_similarity = dot_product / (std::sqrt(norm_shape1) * std::sqrt(norm_shape2));
-    double angular_distance = 1.0 - cosine_similarity;  // Convert similarity to distance
+    double euclid = get_euclidean_distance(shape1_vec, shape2_vec);
 
-    return angular_distance;
+    double manhattan = get_manhattan_distance(shape1_vec, shape2_vec);
+
+    double distance = euclid;
+
+    return distance;
 }
 
 std::vector<Match> Poseshape::match_poses(const std::vector<Pose>& poshes, const Pose& input_pose) {
