@@ -90,7 +90,7 @@ int main(int argc, char** argv)
     }
     // Add handshape files from the handshapes folder
     std::vector<std::string> handshape_files = Poseshape::get_all_handshape_files();
-    fbx_files.insert(fbx_files.end(), handshape_files.begin(), handshape_files.end());
+    // fbx_files.insert(fbx_files.end(), handshape_files.begin(), handshape_files.end());
 
     // Get the (right) handshape data for each file
     std::vector<PoseInfo> handshapes_for_clustering;
@@ -100,13 +100,7 @@ int main(int argc, char** argv)
         Segmentation::get_quaternion_tracks_from_fbx(file, config.bones, handshape_tracks, handshape_fps);
         if (handshape_tracks.empty()) continue;
 
-        // Process the tracks
-        for (JointTrack& quaternion_track : handshape_tracks) { 
-            Math::align_quaternion_signs(quaternion_track.q);
-            Math::smooth_quaternions(quaternion_track.q, 2.0);
-        }
-
-        std::vector<SegmentData> segs = Segmentation::get_segments(handshape_tracks, handshape_fps, "segmentation_config.json", false);
+        std::vector<SegmentData> segs = Segmentation::get_segments(handshape_tracks, handshape_fps, "./segmentation_config.json");
 
         for (int i = 0; i < segs.size(); ++i) {
             const SegmentData& segment = segs[i];
@@ -115,6 +109,24 @@ int main(int argc, char** argv)
             average_handshape.handshape = segment.average_pose;
             handshapes_for_clustering.push_back(average_handshape);
         }
+    }
+
+    for (const auto& handshape_file : handshape_files) {
+        double handshape_fps;
+        std::vector<JointTrack> handshape_tracks;
+        Segmentation::get_quaternion_tracks_from_fbx(handshape_file, config.bones, handshape_tracks, handshape_fps);
+        if (handshape_tracks.empty()) continue;
+
+        // Process the tracks
+        for (JointTrack& quaternion_track : handshape_tracks) { 
+            Math::align_quaternion_signs(quaternion_track.q);
+            Math::smooth_quaternions(quaternion_track.q, 2.0);
+        }
+
+        PoseInfo average_handshape;
+        average_handshape.name = handshape_file;
+        average_handshape.handshape = Poseshape::get_average_pose_from_segment(handshape_tracks, {0, static_cast<int>(handshape_tracks[0].q.size()) - 1}, false);
+        handshapes_for_clustering.push_back(average_handshape);
     }
 
     create_distance_matrix_from_handshapes(handshapes_for_clustering, "output/handshape_distance_matrix.csv");

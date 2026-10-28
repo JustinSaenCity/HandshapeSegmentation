@@ -109,12 +109,15 @@ std::vector<double> Math::aggregate_quaternion_data(const std::vector<std::vecto
     const int n = static_cast<int>(quaternion_tracks[0].size());
     std::vector<double> speed(n, 0.0);
     for (int t = 1; t < n - 1; ++t) {
-        double sum = 0;
+        // double sum = 0;
+        double extremest_acceleration = 0.0;
         for (const auto& quaternion_track : quaternion_tracks) {
-            sum += Math::angular_acceletation_at_time(quaternion_track, t, dt);
-            break;
+            double acc = Math::angular_acceletation_at_time(quaternion_track, t, dt);
+            if (std::abs(acc) > std::abs(extremest_acceleration)) {
+                extremest_acceleration = acc;
+            }
         }
-        speed[t] = sum / quaternion_tracks.size();
+        speed[t] = extremest_acceleration;
     }
     speed[0] = speed[1]; speed[n-1] = speed[n-2];
     return speed;

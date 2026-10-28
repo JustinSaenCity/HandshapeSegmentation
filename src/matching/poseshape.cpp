@@ -34,15 +34,15 @@ std::vector<std::string> get_all_handshape_files_old() {
     return handshape_files;
 }
 
-Pose Poseshape::get_average_pose_from_segment(const std::vector<JointTrack>& handshape_tracks, const Segment& segment) {
+Pose Poseshape::get_average_pose_from_segment(const std::vector<JointTrack>& handshape_tracks, const Segment& segment, bool take_middle_50_percent) {
     Pose average_pose;
     average_pose.joint_names.reserve(handshape_tracks.size());
     average_pose.joints.reserve(handshape_tracks.size());
 
-    // Since the hand may still be moving slightly after the acceleration maximum, take the middle 50% frames
+    // Since the hand may still be moving slightly after the acceleration maximum, take the middle 50% frames (or all)
     int segment_length = segment.end - segment.start + 1;
-    int start_frame = segment.start + segment_length / 4;
-    int end_frame = segment.end - segment_length / 4;
+    int start_frame = take_middle_50_percent ? segment.start + segment_length / 4 : segment.start;
+    int end_frame = take_middle_50_percent ? segment.end - segment_length / 4 : segment.end;
 
     for (size_t i = 0; i < handshape_tracks.size(); ++i) {  // Go through each JointTrack (finger bone)
         Eigen::Quaterniond avg_quat(0, 0, 0, 0);
@@ -64,11 +64,42 @@ double Poseshape::pose_distance(const Pose& shape1, const Pose& shape2) {
         throw std::invalid_argument("Poses must have the same number of quaternions.");
     }
 
-    double angular_distance = 0.0;
-    for (size_t i = 0; i < shape1.joints.size(); ++i)
-        angular_distance += Math::radial_angle_between_quats(shape1.joints[i], shape2.joints[i]);
+    // double angular_distance = 0.0;
+    // for (size_t i = 0; i < shape1.joints.size(); ++i)
+    //     angular_distance += Math::radial_angle_between_quats(shape1.joints[i], shape2.joints[i]);
 
-    angular_distance /= static_cast<double>(shape1.joints.size());
+    // angular_distance /= static_cast<double>(shape1.joints.size());
+
+    // Cosine distance between shapes
+    std::vector<double> shape1_vec, shape2_vec;
+    for (size_t i = 0; i < shape1.joints.size(); ++i) {
+        Eigen::Quaterniond q1 = shape1.joints[i];
+        Eigen::Quaterniond q2 = shape2.joints[i];
+
+        // Convert quaternions to 4D vectors
+        shape1_vec.push_back(q1.w());
+        shape1_vec.push_back(q1.x());
+        shape1_vec.push_back(q1.y());
+        shape1_vec.push_back(q1.z());
+
+        shape2_vec.push_back(q2.w());
+        shape2_vec.push_back(q2.x());
+        shape2_vec.push_back(q2.y());
+        shape2_vec.push_back(q2.z());
+    }
+
+    // Compute cosine similarity
+    double dot_product = 0.0;
+    double norm_shape1 = 0.0;
+    double norm_shape2 = 0.0;
+    for (size_t i = 0; i < shape1_vec.size(); ++i) {
+        dot_product += shape1_vec[i] * shape2_vec[i];
+        norm_shape1 += shape1_vec[i] * shape1_vec[i];
+        norm_shape2 += shape2_vec[i] * shape2_vec[i];
+    }
+
+    double cosine_similarity = dot_product / (std::sqrt(norm_shape1) * std::sqrt(norm_shape2));
+    double angular_distance = 1.0 - cosine_similarity;  // Convert similarity to distance
 
     return angular_distance;
 }
