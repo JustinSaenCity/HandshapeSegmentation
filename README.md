@@ -19,12 +19,44 @@
 
 ## Configuration
 
-TODO
+1. bones - A list of bone names, these bones are used to detect segmentation.
+2. min_segment_length - The minimal number of frames the detected segments will be.
+3. min_acceleration_threshold - The absolute minimal value the peaks and valleys of the acceleration have to be before being detected in rad/s².
+4. smoothing_sigma - The sigma used in the Gaussian smoothing of the quaternion values found in the animation.
+5. threshold_factor - How many standard deviations a peak or valley has to be from 0 before being detected.
+
+Example `segmentation_config.json`:
+```json
+{
+    "bones": ["RightHandIndex",
+              "RightHandIndex1",
+              "RightHandIndex2",
+              "RightHandIndex3",
+              "RightHandThumb1",
+              "RightHandThumb2",
+              "RightHandThumb3",
+              "RightHandMiddle1",
+              "RightHandMiddle2",
+              "RightHandMiddle3",
+              "RightHandRing",
+              "RightHandPinky",
+              "RightHandPinky1",
+              "RightHandPinky2",
+              "RightHandPinky3",
+              "RightHandRing1",
+              "RightHandRing2",
+              "RightHandRing3"],
+    "min_segment_length": 2,
+    "min_acceleration_threshold": 0.25,
+    "smoothing_sigma": 1.5,
+    "threshold_factor": 0.5
+}
+```
 
 ## Usage
 
 ```bash
-.\build\Release\handseg.exe <path_to_fbx_file>
+.\build\Release\shapeseg.exe <path_to_fbx_file>
 ```
 
 or get segmentation data through the C++ function in `src/segmentation.h`:
