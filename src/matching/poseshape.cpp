@@ -174,10 +174,10 @@ double Poseshape::pose_distance(const Pose& shape1, const Pose& shape2) {
     return distance;
 }
 
-std::vector<Match> Poseshape::match_poses(const std::vector<Pose>& poshes, const Pose& input_pose) {
+std::vector<Match> Poseshape::match_poses(const std::vector<Pose>& poses, const Pose& input_pose) {
     std::vector<Match> matches;
-    for (size_t i = 0; i < poshes.size(); ++i) {
-        double distance = Poseshape::pose_distance(poshes[i], input_pose);
+    for (size_t i = 0; i < poses.size(); ++i) {
+        double distance = Poseshape::pose_distance(poses[i], input_pose);
         matches.push_back({static_cast<int>(i), distance});
     }
 
