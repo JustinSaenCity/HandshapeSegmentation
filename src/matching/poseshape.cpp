@@ -1,14 +1,18 @@
 #include <filesystem>
+#include <vector>
+
+#include "config/segmentation_config.h"
+#include "config/matching_config.h"
 
 #include "poseshape.h"
 
 using namespace math;
+using namespace segmentation;
 
 using namespace poseshape;
 
-std::vector<std::string> Poseshape::get_all_handshape_files() {
+std::vector<std::string> Poseshape::get_all_handshape_files(std::string handshape_dir) {
     std::vector<std::string> handshape_files;
-    std::string handshape_dir = "../HandformSession/HandformsTrimmed/";
 
     // Go through all folders, in the folder get the fbx file located in unreal/Vicon/
     for (const auto& entry : std::filesystem::directory_iterator(handshape_dir)) {
@@ -18,6 +22,28 @@ std::vector<std::string> Poseshape::get_all_handshape_files() {
         }
     }
     return handshape_files;
+}
+
+std::vector<PoseInfo> Poseshape::get_poses_from_files(const std::vector<std::string>& handshape_files, const std::vector<std::string>& bones) {
+    std::vector<PoseInfo> poses;
+    for (const auto& handshape_file : handshape_files) {
+        double handshape_fps;
+        std::vector<JointTrack> handshape_tracks;
+        Segmentation::get_quaternion_tracks_from_fbx(handshape_file, bones, handshape_tracks, handshape_fps);
+        if (handshape_tracks.empty()) continue;
+
+        // Process the tracks
+        for (JointTrack& quaternion_track : handshape_tracks) { 
+            Math::align_quaternion_signs(quaternion_track.q);
+            Math::smooth_quaternions(quaternion_track.q, 2.0);
+        }
+
+        PoseInfo average_handshape;
+        average_handshape.name = handshape_file;
+        average_handshape.handshape = Poseshape::get_average_pose_from_segment(handshape_tracks, {0, static_cast<int>(handshape_tracks[0].q.size()) - 1}, false);
+        poses.push_back(average_handshape);
+    }
+    return poses;
 }
 
 std::vector<std::string> get_all_handshape_files_old() {
@@ -187,4 +213,41 @@ std::vector<Match> Poseshape::match_poses(const std::vector<Pose>& poses, const 
     });
 
     return matches;
+}
+
+void get_matching_poses(const Pose& input_pose, const std::string& handshape_dir, const std::vector<std::string>& bones, std::vector<Match>& output_matches, std::vector<std::string>& output_handshape_names) {
+    // Get all handshape files
+    std::vector<std::string> handshape_files = Poseshape::get_all_handshape_files(handshape_dir);
+
+    // Get poses from files
+    std::vector<PoseInfo> poses_info = Poseshape::get_poses_from_files(handshape_files, bones);
+
+    // Extract poses from PoseInfo
+    std::vector<Pose> poses;
+    std::vector<std::string> handshape_names;
+    for (const auto& pose_info : poses_info) {
+        poses.push_back(pose_info.handshape);
+        output_handshape_names.push_back(pose_info.name);
+    }
+
+    // Match poses
+    output_matches = Poseshape::match_poses(poses, input_pose);
+}
+
+std::vector<MatchInfo> Poseshape::get_matches(const SegmentData& segment_data, const std::string& segment_config_file, const std::string& matching_config_file) {
+    // Load configs
+    Config seg_config = Config::load_from_file(segment_config_file);
+    MatchingConfig match_config = MatchingConfig::load_from_file(matching_config_file);
+
+    Pose input_pose = segment_data.average_pose;
+    
+    std::vector<Match> matches;
+    std::vector<std::string> handshape_names;
+    get_matching_poses(input_pose, match_config.handshape_dir, seg_config.bones, matches, handshape_names);
+    std::vector<MatchInfo> match_info;
+    for (const auto& match : matches) {
+        match_info.push_back({handshape_names[match.handshape_id], match});
+    }
+
+    return match_info;
 }

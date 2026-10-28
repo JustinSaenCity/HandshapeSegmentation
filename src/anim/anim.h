@@ -5,10 +5,7 @@
 #include <vector>
 #include <ufbx.h>
 
-struct JointTrack {
-    std::string name;
-    std::vector<Eigen::Quaterniond> q;
-};
+#include "types.h"
 
 namespace anim
 {

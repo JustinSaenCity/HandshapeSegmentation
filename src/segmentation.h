@@ -7,10 +7,10 @@
 #include "math/math.h"
 #include "anim/anim.h"
 
-struct SegmentData {
-    Segment segment;
-    Pose average_pose;
-};
+// struct SegmentData {
+//     Segment segment;
+//     Pose average_pose;
+// };
 
 namespace segmentation
 {

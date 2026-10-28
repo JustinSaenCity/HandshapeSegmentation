@@ -5,9 +5,12 @@
 #include <string>
 #include <vector>
 
+#include "types.h"
+
 #include "math/math.h"
 #include "anim/anim.h"
 #include "config/segmentation_config.h"
+#include "config/matching_config.h"
 #include "matching/poseshape.h"
 #include "segmentation.h"
 
@@ -15,11 +18,6 @@ using namespace math;
 using namespace anim;
 using namespace segmentation;
 using namespace poseshape;
-
-struct PoseInfo {
-    std::string name;
-    Pose handshape;
-};
 
 void create_distance_matrix_from_handshapes(const std::vector<PoseInfo>& handshapes, std::string output_file)
 {
@@ -77,6 +75,7 @@ int main(int argc, char** argv)
 
     //---------------------------------------------------------------------------------------------
     Config config = Config::load_from_file("segmentation_config.json");
+    MatchingConfig match_config = MatchingConfig::load_from_file("matching_config.json");
 
     std::vector<std::string> fbx_files;
     std::string fbx_dir = "fbx";
@@ -89,7 +88,7 @@ int main(int argc, char** argv)
         }
     }
     // Add handshape files from the handshapes folder
-    std::vector<std::string> handshape_files = Poseshape::get_all_handshape_files();
+    std::vector<std::string> handshape_files = Poseshape::get_all_handshape_files(match_config.handshape_dir);
     // fbx_files.insert(fbx_files.end(), handshape_files.begin(), handshape_files.end());
 
     // Get the (right) handshape data for each file
@@ -130,6 +129,9 @@ int main(int argc, char** argv)
     }
 
     create_distance_matrix_from_handshapes(handshapes_for_clustering, "output/handshape_distance_matrix.csv");
+
+    SegmentData segment_data = segments[0];
+    std::vector<MatchInfo> matches = Poseshape::get_matches(segment_data, "segmentation_config.json", "matching_config.json");
 
     return 0;
 }

@@ -3,10 +3,7 @@
 #include <Eigen/Geometry>
 #include <vector>
 
-struct Segment { 
-    int start, end;
-};
-
+#include "types.h"
 
 namespace math
 {
