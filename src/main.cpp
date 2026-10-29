@@ -19,14 +19,14 @@ using namespace anim;
 using namespace segmentation;
 using namespace poseshape;
 
-void create_distance_matrix_from_handshapes(const std::vector<PoseInfo>& handshapes, std::string output_file)
+void create_distance_matrix_from_handshapes(const std::vector<PoseInfo>& handshapes, const MatchingMethod method, std::string output_file)
 {
     int N = handshapes.size();
     std::vector<std::vector<double>> distance_matrix(N, std::vector<double>(N, 0.0));
 
     for (int i = 0; i < N; ++i) {
         for (int j = i + 1; j < N; ++j) {
-            double distance = Poseshape::pose_distance(handshapes[i].handshape, handshapes[j].handshape);
+            double distance = Poseshape::pose_distance(handshapes[i].handshape, handshapes[j].handshape, method);
             distance_matrix[i][j] = distance;
             distance_matrix[j][i] = distance; // Symmetric
         }
@@ -128,7 +128,7 @@ int main(int argc, char** argv)
         handshapes_for_clustering.push_back(average_handshape);
     }
 
-    create_distance_matrix_from_handshapes(handshapes_for_clustering, "output/handshape_distance_matrix.csv");
+    create_distance_matrix_from_handshapes(handshapes_for_clustering, match_config.matching_method, "output/handshape_distance_matrix.csv");
 
     SegmentData segment_data = segments[0];
     std::vector<MatchInfo> matches = Poseshape::get_matches(segment_data, "segmentation_config.json", "matching_config.json");

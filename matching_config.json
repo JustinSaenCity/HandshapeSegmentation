@@ -1,3 +1,4 @@
 {
-    "handshape_dir": "../HandformSession/HandformsTrimmed"
+    "handshape_dir": "../HandformSession/HandformsTrimmed",
+    "matching_method": "Euclidean"
 }

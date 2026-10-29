@@ -2,7 +2,6 @@
 #include <vector>
 
 #include "config/segmentation_config.h"
-#include "config/matching_config.h"
 
 #include "poseshape.h"
 
@@ -169,41 +168,33 @@ double get_manhattan_distance(const std::vector<double>& vec1, const std::vector
     return sum_abs_diff;
 }
 
-double Poseshape::pose_distance(const Pose& shape1, const Pose& shape2) {
+double Poseshape::pose_distance(const Pose& shape1, const Pose& shape2, const MatchingMethod method) {
     if (shape1.joints.size() != shape2.joints.size()) {
         printf("Error: Poses must have the same number of quaternions. Shape1 has %zu, Shape2 has %zu\n", shape1.joints.size(), shape2.joints.size());
         throw std::invalid_argument("Poses must have the same number of quaternions.");
     }
 
-    // double angular_distance = 0.0;
-    // for (size_t i = 0; i < shape1.joints.size(); ++i)
-    //     angular_distance += Math::radial_angle_between_quats(shape1.joints[i], shape2.joints[i]);
-
-    // angular_distance /= static_cast<double>(shape1.joints.size());
-
-    // Cosine distance between shapes
     // std::vector<double> shape1_vec = quaternions_to_vector(shape1.joints);
     // std::vector<double> shape2_vec = quaternions_to_vector(shape2.joints);
     std::vector<double> shape1_vec = quaternions_to_relevant_euler_vector(shape1.joints);
     std::vector<double> shape2_vec = quaternions_to_relevant_euler_vector(shape2.joints);
 
-    // Compute cosine similarity
-    double cosine_similarity = get_cosine_similarity(shape1_vec, shape2_vec);
-    double cosine_distance = 1.0 - cosine_similarity;  // Convert similarity to distance
-
-    double euclid = get_euclidean_distance(shape1_vec, shape2_vec);
-
-    double manhattan = get_manhattan_distance(shape1_vec, shape2_vec);
-
-    double distance = euclid;
-
-    return distance;
+    switch (method) {
+        case MatchingMethod::Euclidean:
+            return get_euclidean_distance(shape1_vec, shape2_vec);
+        case MatchingMethod::Cosine:
+            return 1.0 - get_cosine_similarity(shape1_vec, shape2_vec);  // Convert similarity to distance
+        case MatchingMethod::Manhattan:
+            return get_manhattan_distance(shape1_vec, shape2_vec);
+        default:
+            throw std::invalid_argument("Unknown matching method.");
+    }
 }
 
-std::vector<Match> Poseshape::match_poses(const std::vector<Pose>& poses, const Pose& input_pose) {
+std::vector<Match> Poseshape::match_poses(const std::vector<Pose>& poses, const Pose& input_pose, const MatchingMethod method) {
     std::vector<Match> matches;
     for (size_t i = 0; i < poses.size(); ++i) {
-        double distance = Poseshape::pose_distance(poses[i], input_pose);
+        double distance = Poseshape::pose_distance(poses[i], input_pose, method);
         matches.push_back({static_cast<int>(i), distance});
     }
 
@@ -215,7 +206,7 @@ std::vector<Match> Poseshape::match_poses(const std::vector<Pose>& poses, const 
     return matches;
 }
 
-void get_matching_poses(const Pose& input_pose, const std::string& handshape_dir, const std::vector<std::string>& bones, std::vector<Match>& output_matches, std::vector<std::string>& output_handshape_names) {
+void get_matching_poses(const Pose& input_pose, const std::string& handshape_dir, const std::vector<std::string>& bones, const MatchingMethod method, std::vector<Match>& output_matches, std::vector<std::string>& output_handshape_names) {
     // Get all handshape files
     std::vector<std::string> handshape_files = Poseshape::get_all_handshape_files(handshape_dir);
 
@@ -231,7 +222,7 @@ void get_matching_poses(const Pose& input_pose, const std::string& handshape_dir
     }
 
     // Match poses
-    output_matches = Poseshape::match_poses(poses, input_pose);
+    output_matches = Poseshape::match_poses(poses, input_pose, method);
 }
 
 std::vector<MatchInfo> Poseshape::get_matches(const SegmentData& segment_data, const std::string& segment_config_file, const std::string& matching_config_file) {
@@ -243,7 +234,7 @@ std::vector<MatchInfo> Poseshape::get_matches(const SegmentData& segment_data, c
     
     std::vector<Match> matches;
     std::vector<std::string> handshape_names;
-    get_matching_poses(input_pose, match_config.handshape_dir, seg_config.bones, matches, handshape_names);
+    get_matching_poses(input_pose, match_config.handshape_dir, seg_config.bones, match_config.matching_method, matches, handshape_names);
     std::vector<MatchInfo> match_info;
     for (const auto& match : matches) {
         match_info.push_back({handshape_names[match.handshape_id], match});
