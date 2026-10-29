@@ -174,8 +174,6 @@ double Poseshape::pose_distance(const Pose& shape1, const Pose& shape2, const Ma
         throw std::invalid_argument("Poses must have the same number of quaternions.");
     }
 
-    // std::vector<double> shape1_vec = quaternions_to_vector(shape1.joints);
-    // std::vector<double> shape2_vec = quaternions_to_vector(shape2.joints);
     std::vector<double> shape1_vec = quaternions_to_relevant_euler_vector(shape1.joints);
     std::vector<double> shape2_vec = quaternions_to_relevant_euler_vector(shape2.joints);
 
