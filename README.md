@@ -68,7 +68,17 @@ int main() {
    double fps;
    std::vector<JointTrack> tracks;
    Segmentation::get_quaternion_tracks_from_fbx("path/to/file.fbx", {}, tracks, fps);
-   std::vector<SegmentData> segments = Segmentation::get_segments(tracks, fps, "path/to/config.json");
+   std::vector<SegmentData> segments = Segmentation::get_segments(tracks, fps, "path/to/segmentation_config.json");
+}
+```
+
+and get the matches through the C++ function in `src/matching/poseshape.h`:
+
+```cpp
+#include "matching/poseshape.h"
+
+int function(const SegmentData& segment_data) {
+   std::vector<MatchInfo> matches = Poseshape::get_matches(segment_data, "path/to/segmentation_config.json", "path/to/matching_config.json");
 }
 ```
 

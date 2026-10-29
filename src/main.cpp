@@ -133,5 +133,10 @@ int main(int argc, char** argv)
     SegmentData segment_data = segments[0];
     std::vector<MatchInfo> matches = Poseshape::get_matches(segment_data, "segmentation_config.json", "matching_config.json");
 
+    printf("Matches for segment from %d to %d:\n", segment_data.segment.start, segment_data.segment.end);
+    for (const auto& match_info : matches) {
+        printf("Handshape: %s, Distance: %.6f\n", match_info.handshape_name.c_str(), match_info.match.distance);
+    }
+
     return 0;
 }
