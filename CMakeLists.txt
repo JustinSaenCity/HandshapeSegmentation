@@ -25,6 +25,7 @@ add_executable(shapeseg
               src/anim/anim.cpp
               src/math/math.cpp
               src/matching/poseshape.cpp
+              src/matching/handshape.cpp
               src/segmentation.cpp)
 
 target_link_libraries(shapeseg PRIVATE Eigen3::Eigen

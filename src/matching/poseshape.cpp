@@ -2,11 +2,13 @@
 #include <vector>
 
 #include "config/segmentation_config.h"
+#include "handshape.h"
 
 #include "poseshape.h"
 
 using namespace math;
 using namespace segmentation;
+using namespace handshape;
 
 using namespace poseshape;
 
@@ -174,8 +176,10 @@ double Poseshape::pose_distance(const Pose& shape1, const Pose& shape2, const Ma
         throw std::invalid_argument("Poses must have the same number of quaternions.");
     }
 
-    std::vector<double> shape1_vec = quaternions_to_relevant_euler_vector(shape1.joints);
-    std::vector<double> shape2_vec = quaternions_to_relevant_euler_vector(shape2.joints);
+    // std::vector<double> shape1_vec = quaternions_to_relevant_euler_vector(shape1.joints);
+    // std::vector<double> shape2_vec = quaternions_to_relevant_euler_vector(shape2.joints);
+    std::vector<double> shape1_vec = Handshape::compute_handshape_representation_from_pose(shape1);
+    std::vector<double> shape2_vec = Handshape::compute_handshape_representation_from_pose(shape2);
 
     switch (method) {
         case MatchingMethod::Euclidean:
