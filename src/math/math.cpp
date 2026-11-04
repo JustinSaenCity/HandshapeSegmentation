@@ -245,3 +245,48 @@ void Math::smooth_values(std::vector<double>& values, double sigma) {
 
     values = smoothed_values;
 }
+
+double Math::get_cosine_similarity(const std::vector<double>& vec1, const std::vector<double>& vec2) {
+    if (vec1.size() != vec2.size()) {
+        throw std::invalid_argument("Vectors must be of the same size for cosine similarity.");
+    }
+
+    double dot_product = 0.0;
+    double norm_vec1 = 0.0;
+    double norm_vec2 = 0.0;
+
+    for (size_t i = 0; i < vec1.size(); ++i) {
+        dot_product += vec1[i] * vec2[i];
+        norm_vec1 += vec1[i] * vec1[i];
+        norm_vec2 += vec2[i] * vec2[i];
+    }
+
+    return dot_product / (std::sqrt(norm_vec1) * std::sqrt(norm_vec2));
+}
+
+double Math::get_euclidean_distance(const std::vector<double>& vec1, const std::vector<double>& vec2) {
+    if (vec1.size() != vec2.size()) {
+        throw std::invalid_argument("Vectors must be of the same size for Euclidean distance.");
+    }
+
+    double sum_squared_diff = 0.0;
+    for (size_t i = 0; i < vec1.size(); ++i) {
+        double diff = vec1[i] - vec2[i];
+        sum_squared_diff += diff * diff;
+    }
+
+    return std::sqrt(sum_squared_diff);
+}
+
+double Math::get_manhattan_distance(const std::vector<double>& vec1, const std::vector<double>& vec2) {
+    if (vec1.size() != vec2.size()) {
+        throw std::invalid_argument("Vectors must be of the same size for Manhattan distance.");
+    }
+
+    double sum_abs_diff = 0.0;
+    for (size_t i = 0; i < vec1.size(); ++i) {
+        sum_abs_diff += std::abs(vec1[i] - vec2[i]);
+    }
+
+    return sum_abs_diff;
+}

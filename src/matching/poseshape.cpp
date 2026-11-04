@@ -3,12 +3,14 @@
 
 #include "config/segmentation_config.h"
 #include "handshape.h"
+#include "anim/anim.h"
 
 #include "poseshape.h"
 
 using namespace math;
 using namespace segmentation;
 using namespace handshape;
+using namespace anim;
 
 using namespace poseshape;
 
@@ -30,7 +32,7 @@ std::vector<PoseInfo> Poseshape::get_poses_from_files(const std::vector<std::str
     for (const auto& handshape_file : handshape_files) {
         double handshape_fps;
         std::vector<JointTrack> handshape_tracks;
-        Segmentation::get_quaternion_tracks_from_fbx(handshape_file, bones, handshape_tracks, handshape_fps);
+        Anim::get_quaternion_tracks_from_fbx(handshape_file, bones, handshape_tracks, handshape_fps);
         if (handshape_tracks.empty()) continue;
 
         // Process the tracks
@@ -125,69 +127,22 @@ std::vector<double> quaternions_to_relevant_euler_vector(const std::vector<Eigen
     return vec;
 }
 
-double get_cosine_similarity(const std::vector<double>& vec1, const std::vector<double>& vec2) {
-    if (vec1.size() != vec2.size()) {
-        throw std::invalid_argument("Vectors must be of the same size for cosine similarity.");
-    }
-
-    double dot_product = 0.0;
-    double norm_vec1 = 0.0;
-    double norm_vec2 = 0.0;
-
-    for (size_t i = 0; i < vec1.size(); ++i) {
-        dot_product += vec1[i] * vec2[i];
-        norm_vec1 += vec1[i] * vec1[i];
-        norm_vec2 += vec2[i] * vec2[i];
-    }
-
-    return dot_product / (std::sqrt(norm_vec1) * std::sqrt(norm_vec2));
-}
-
-double get_euclidean_distance(const std::vector<double>& vec1, const std::vector<double>& vec2) {
-    if (vec1.size() != vec2.size()) {
-        throw std::invalid_argument("Vectors must be of the same size for Euclidean distance.");
-    }
-
-    double sum_squared_diff = 0.0;
-    for (size_t i = 0; i < vec1.size(); ++i) {
-        double diff = vec1[i] - vec2[i];
-        sum_squared_diff += diff * diff;
-    }
-
-    return std::sqrt(sum_squared_diff);
-}
-
-double get_manhattan_distance(const std::vector<double>& vec1, const std::vector<double>& vec2) {
-    if (vec1.size() != vec2.size()) {
-        throw std::invalid_argument("Vectors must be of the same size for Manhattan distance.");
-    }
-
-    double sum_abs_diff = 0.0;
-    for (size_t i = 0; i < vec1.size(); ++i) {
-        sum_abs_diff += std::abs(vec1[i] - vec2[i]);
-    }
-
-    return sum_abs_diff;
-}
-
 double Poseshape::pose_distance(const Pose& shape1, const Pose& shape2, const MatchingMethod method) {
     if (shape1.joints.size() != shape2.joints.size()) {
         printf("Error: Poses must have the same number of quaternions. Shape1 has %zu, Shape2 has %zu\n", shape1.joints.size(), shape2.joints.size());
         throw std::invalid_argument("Poses must have the same number of quaternions.");
     }
 
-    // std::vector<double> shape1_vec = quaternions_to_relevant_euler_vector(shape1.joints);
-    // std::vector<double> shape2_vec = quaternions_to_relevant_euler_vector(shape2.joints);
-    std::vector<double> shape1_vec = Handshape::compute_handshape_representation_from_pose(shape1);
-    std::vector<double> shape2_vec = Handshape::compute_handshape_representation_from_pose(shape2);
+    std::vector<double> shape1_vec = quaternions_to_relevant_euler_vector(shape1.joints);
+    std::vector<double> shape2_vec = quaternions_to_relevant_euler_vector(shape2.joints);
 
     switch (method) {
         case MatchingMethod::Euclidean:
-            return get_euclidean_distance(shape1_vec, shape2_vec);
+            return Math::get_euclidean_distance(shape1_vec, shape2_vec);
         case MatchingMethod::Cosine:
-            return 1.0 - get_cosine_similarity(shape1_vec, shape2_vec);  // Convert similarity to distance
+            return 1.0 - Math::get_cosine_similarity(shape1_vec, shape2_vec);  // Convert similarity to distance
         case MatchingMethod::Manhattan:
-            return get_manhattan_distance(shape1_vec, shape2_vec);
+            return Math::get_manhattan_distance(shape1_vec, shape2_vec);
         default:
             throw std::invalid_argument("Unknown matching method.");
     }

@@ -34,3 +34,8 @@ struct JointTrack {
     std::string name;
     std::vector<Eigen::Quaterniond> q;
 };
+
+struct JointLocationTrack {
+    std::string name;
+    std::vector<Eigen::Vector3d> locations;
+};

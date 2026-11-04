@@ -22,6 +22,7 @@ NLOHMANN_JSON_SERIALIZE_ENUM(MatchingMethod, {
 struct MatchingConfig {
     std::string handshape_dir;
     MatchingMethod matching_method;
+    json bone_mapping;
 
     static MatchingConfig load_from_file(const std::string& filename) {
         std::ifstream file(filename);
@@ -35,6 +36,7 @@ struct MatchingConfig {
         MatchingConfig config;
         config.handshape_dir = j.at("handshape_dir").get<std::string>();
         config.matching_method = j.at("matching_method").get<MatchingMethod>();
+        config.bone_mapping = j.at("bones");
 
         return config;
     }

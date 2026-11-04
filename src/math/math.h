@@ -21,5 +21,9 @@ namespace math
         static std::vector<double> aggregate_quaternion_data(const std::vector<std::vector<Eigen::Quaterniond>>& quaternion_tracks, double dt);
         static std::vector<struct Segment> segment_handshapes(const std::vector<double>& values, double low, double high, int min_len);
         static std::vector<struct Segment> segment_handshapes_by_acceleration(const std::vector<double>& acc, double threshold_factor, int min_len, const double min_threshold);
+
+        static double get_cosine_similarity(const std::vector<double>& vec1, const std::vector<double>& vec2);
+        static double get_euclidean_distance(const std::vector<double>& vec1, const std::vector<double>& vec2);
+        static double get_manhattan_distance(const std::vector<double>& vec1, const std::vector<double>& vec2);
     };
 }
