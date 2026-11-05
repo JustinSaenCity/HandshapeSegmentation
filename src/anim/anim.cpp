@@ -53,17 +53,47 @@ void Anim::fill_joint_tracks(const ufbx_anim* anim, const std::vector<ufbx_node*
     }
 }
 
-void Anim::fill_joint_locations(const ufbx_anim* anim, const std::vector<ufbx_node*>& nodes, const double fps, std::vector<JointLocationTrack>& out_tracks) {
+// void Anim::fill_joint_locations(const ufbx_anim* anim, const std::vector<ufbx_node*>& nodes, const double fps, std::vector<JointLocationTrack>& out_tracks) {
+//     double t0 = anim->time_begin;
+//     double t1 = anim->time_end;
+//     double dt = 1.0 / fps;
+
+//     for (double t = t0; t <= t1; t += dt) {
+//         for (size_t j = 0; j < nodes.size(); ++j) {
+//             ufbx_transform tr = ufbx_evaluate_transform(anim, nodes[j], t);
+//             Eigen::Vector3d v(tr.translation.x, tr.translation.y, tr.translation.z);
+//             out_tracks[j].locations.emplace_back(v);
+//         }
+//     }
+// }
+
+void Anim::fill_joint_locations(
+    const ufbx_scene* scene,
+    const ufbx_anim* anim,
+    const std::vector<ufbx_node*>& nodes,
+    const double fps,
+    std::vector<JointLocationTrack>& out_tracks)
+{
     double t0 = anim->time_begin;
     double t1 = anim->time_end;
     double dt = 1.0 / fps;
 
+    ufbx_error error;
+
     for (double t = t0; t <= t1; t += dt) {
+        ufbx_scene* eval_scene = ufbx_evaluate_scene(scene, anim, t, nullptr, &error);
+        if (!eval_scene) continue;
+
         for (size_t j = 0; j < nodes.size(); ++j) {
-            ufbx_transform tr = ufbx_evaluate_transform(anim, nodes[j], t);
-            Eigen::Vector3d v(tr.translation.x, tr.translation.y, tr.translation.z);
+            ufbx_node* eval_node = eval_scene->nodes.data[nodes[j]->typed_id];
+
+            ufbx_vec3 pos = ufbx_transform_position(&eval_node->node_to_world, ufbx_zero_vec3);
+
+            Eigen::Vector3d v(pos.x, pos.y, pos.z);
             out_tracks[j].locations.emplace_back(v);
         }
+
+        ufbx_free_scene(eval_scene);
     }
 }
 
@@ -119,7 +149,7 @@ void Anim::get_location_tracks_from_fbx(const std::string& fbx_file, const std::
     // Sample the joint tracks for each finger bone
     const ufbx_anim* anim = scene->anim;
     const double fps = scene->settings.frames_per_second;
-    Anim::fill_joint_locations(anim, nodes, fps, location_tracks);
+    Anim::fill_joint_locations(scene, anim, nodes, fps, location_tracks);
 
     out_tracks = location_tracks;
     out_fps = scene->settings.frames_per_second;

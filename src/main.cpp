@@ -141,7 +141,7 @@ int main(int argc, char** argv)
     }
 
     // ------------
-    Handshape::create_distance_matrix_from_handshapefiles(handshape_files, {}, match_config.bone_mapping, match_config.matching_method, "output/handshape_distance_matrix_handskel.csv");
+    Handshape::create_distance_matrix_from_handshapefiles(handshape_files, fbx_files, {}, match_config.bone_mapping, match_config.matching_method, "output/handshape_distance_matrix_handskel.csv");
 
     return 0;
 }
