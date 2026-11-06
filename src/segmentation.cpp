@@ -13,35 +13,6 @@ using namespace anim;
 using namespace segmentation;
 using namespace poseshape;
 
-void Segmentation::get_quaternion_tracks_from_fbx(const std::string& fbx_file, const std::vector<std::string>& bone_filter, std::vector<JointTrack>& out_tracks, double& out_fps)
-{
-    // Load the FBX file
-    ufbx_error error;
-    ufbx_scene* scene;
-    if (Anim::load_fbx_scene(fbx_file.c_str(), &scene))
-        return;
-
-    // Find the finger bones
-    std::vector<ufbx_node*> nodes;
-    std::vector<JointTrack> tracks;
-    int num_fingers = Anim::get_bones_from_scene(scene, bone_filter, &nodes, &tracks);
-    if (num_fingers == 0) {
-        printf("No finger bones found in %s, please adjust the filter.\n", fbx_file.c_str());
-        ufbx_free_scene(scene);
-        return;
-    }
-
-    // Sample the joint tracks for each finger bone
-    const ufbx_anim* anim = scene->anim;
-    const double fps = scene->settings.frames_per_second;
-    Anim::fill_joint_tracks(anim, nodes, fps, tracks);
-
-    out_tracks = tracks;
-    out_fps = scene->settings.frames_per_second;
-
-    ufbx_free_scene(scene);
-}
-
 std::vector<SegmentData> Segmentation::get_segments(const std::vector<JointTrack>& tracks, const double fps, 
                                            const std::string& config_file, bool save_to_csv, bool take_middle_50_percent)
 {

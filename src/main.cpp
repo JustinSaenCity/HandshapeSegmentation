@@ -12,12 +12,14 @@
 #include "config/segmentation_config.h"
 #include "config/matching_config.h"
 #include "matching/poseshape.h"
+#include "matching/handshape.h"
 #include "segmentation.h"
 
 using namespace math;
 using namespace anim;
 using namespace segmentation;
 using namespace poseshape;
+using namespace handshape;
 
 void create_distance_matrix_from_handshapes(const std::vector<PoseInfo>& handshapes, const MatchingMethod method, std::string output_file)
 {
@@ -64,7 +66,7 @@ int main(int argc, char** argv)
     // Get the quaternion tracks from the FBX file
     double fps;
     std::vector<JointTrack> tracks;
-    Segmentation::get_quaternion_tracks_from_fbx(argv[1], {}, tracks, fps);
+    Anim::get_quaternion_tracks_from_fbx(argv[1], {}, tracks, fps);
     printf("Loaded %zu quaternion tracks from %s at %.2f fps\n", tracks.size(), argv[1], fps);
 
     // Get the segments from the quaternion tracks
@@ -96,7 +98,7 @@ int main(int argc, char** argv)
     for (const auto& file : fbx_files) {
         double handshape_fps;
         std::vector<JointTrack> handshape_tracks;
-        Segmentation::get_quaternion_tracks_from_fbx(file, config.bones, handshape_tracks, handshape_fps);
+        Anim::get_quaternion_tracks_from_fbx(file, config.bones, handshape_tracks, handshape_fps);
         if (handshape_tracks.empty()) continue;
 
         std::vector<SegmentData> segs = Segmentation::get_segments(handshape_tracks, handshape_fps, "./segmentation_config.json");
@@ -113,7 +115,7 @@ int main(int argc, char** argv)
     for (const auto& handshape_file : handshape_files) {
         double handshape_fps;
         std::vector<JointTrack> handshape_tracks;
-        Segmentation::get_quaternion_tracks_from_fbx(handshape_file, config.bones, handshape_tracks, handshape_fps);
+        Anim::get_quaternion_tracks_from_fbx(handshape_file, config.bones, handshape_tracks, handshape_fps);
         if (handshape_tracks.empty()) continue;
 
         // Process the tracks
@@ -137,6 +139,9 @@ int main(int argc, char** argv)
     for (const auto& match_info : matches) {
         printf("Handshape: %s, Distance: %.6f\n", match_info.handshape_name.c_str(), match_info.match.distance);
     }
+
+    // ------------
+    Handshape::create_distance_matrix_from_handshapefiles(handshape_files, fbx_files, {}, match_config.bone_mapping, match_config.matching_method, "output/handshape_distance_matrix_handskel.csv");
 
     return 0;
 }
