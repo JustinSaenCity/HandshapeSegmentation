@@ -8,7 +8,6 @@
 struct HandSkeleton {  // Based on papers representation
     Eigen::Vector3d thumb_metacarpal = Eigen::Vector3d::Constant(std::numeric_limits<double>::quiet_NaN());
     Eigen::Vector3d thumb_proximal = Eigen::Vector3d::Constant(std::numeric_limits<double>::quiet_NaN());
-    Eigen::Vector3d thumb_middle = Eigen::Vector3d::Constant(std::numeric_limits<double>::quiet_NaN());
     Eigen::Vector3d thumb_distal = Eigen::Vector3d::Constant(std::numeric_limits<double>::quiet_NaN());
     Eigen::Vector3d thumb_tip = Eigen::Vector3d::Constant(std::numeric_limits<double>::quiet_NaN());
 
