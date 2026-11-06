@@ -53,20 +53,6 @@ void Anim::fill_joint_tracks(const ufbx_anim* anim, const std::vector<ufbx_node*
     }
 }
 
-// void Anim::fill_joint_locations(const ufbx_anim* anim, const std::vector<ufbx_node*>& nodes, const double fps, std::vector<JointLocationTrack>& out_tracks) {
-//     double t0 = anim->time_begin;
-//     double t1 = anim->time_end;
-//     double dt = 1.0 / fps;
-
-//     for (double t = t0; t <= t1; t += dt) {
-//         for (size_t j = 0; j < nodes.size(); ++j) {
-//             ufbx_transform tr = ufbx_evaluate_transform(anim, nodes[j], t);
-//             Eigen::Vector3d v(tr.translation.x, tr.translation.y, tr.translation.z);
-//             out_tracks[j].locations.emplace_back(v);
-//         }
-//     }
-// }
-
 void Anim::fill_joint_locations(
     const ufbx_scene* scene,
     const ufbx_anim* anim,
@@ -117,7 +103,8 @@ void Anim::get_quaternion_tracks_from_fbx(const std::string& fbx_file, const std
     }
 
     // Sample the joint tracks for each finger bone
-    const ufbx_anim* anim = scene->anim;
+    // const ufbx_anim* anim = scene->anim;
+    const ufbx_anim* anim = scene->anim_stacks.data[0]->anim;
     const double fps = scene->settings.frames_per_second;
     Anim::fill_joint_tracks(anim, nodes, fps, tracks);
 
@@ -147,7 +134,8 @@ void Anim::get_location_tracks_from_fbx(const std::string& fbx_file, const std::
     }
 
     // Sample the joint tracks for each finger bone
-    const ufbx_anim* anim = scene->anim;
+    // const ufbx_anim* anim = scene->anim;
+    const ufbx_anim* anim = scene->anim_stacks.data[0]->anim;
     const double fps = scene->settings.frames_per_second;
     Anim::fill_joint_locations(scene, anim, nodes, fps, location_tracks);
 
