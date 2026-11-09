@@ -246,7 +246,7 @@ void Math::smooth_values(std::vector<double>& values, double sigma) {
     values = smoothed_values;
 }
 
-double Math::get_cosine_similarity(const std::vector<double>& vec1, const std::vector<double>& vec2) {
+double Math::get_cosine_similarity(const std::vector<double>& vec1, const std::vector<double>& vec2, const std::vector<int>& wrap_indices) {
     if (vec1.size() != vec2.size()) {
         throw std::invalid_argument("Vectors must be of the same size for cosine similarity.");
     }
@@ -256,36 +256,73 @@ double Math::get_cosine_similarity(const std::vector<double>& vec1, const std::v
     double norm_vec2 = 0.0;
 
     for (size_t i = 0; i < vec1.size(); ++i) {
-        dot_product += vec1[i] * vec2[i];
-        norm_vec1 += vec1[i] * vec1[i];
-        norm_vec2 += vec2[i] * vec2[i];
+        bool wrap = std::find(wrap_indices.begin(), wrap_indices.end(), static_cast<int>(i)) != wrap_indices.end();
+
+        if (wrap) {
+            double c1 = std::cos(vec1[i]), s1 = std::sin(vec1[i]);
+            double c2 = std::cos(vec2[i]), s2 = std::sin(vec2[i]);
+
+            dot_product += c1 * c2 + s1 * s2;
+            norm_vec1 += c1 * c1 + s1 * s1;
+            norm_vec2 += c2 * c2 + s2 * s2;
+        }
+        else {
+            dot_product += vec1[i] * vec2[i];
+            norm_vec1 += vec1[i] * vec1[i];
+            norm_vec2 += vec2[i] * vec2[i];
+        }
     }
 
     return dot_product / (std::sqrt(norm_vec1) * std::sqrt(norm_vec2));
 }
 
-double Math::get_euclidean_distance(const std::vector<double>& vec1, const std::vector<double>& vec2) {
+double angularDistance(double a, double b)
+{
+    double d = std::fabs(a - b);  // [0, 2π], distance over circle
+    if (d > M_PI)
+        d = 2.0 * M_PI - d;  // [0, π], shortest distance over circle
+    return d;
+}
+
+double Math::get_euclidean_distance(const std::vector<double>& vec1, const std::vector<double>& vec2, const std::vector<int>& wrap_indices) {
     if (vec1.size() != vec2.size()) {
         throw std::invalid_argument("Vectors must be of the same size for Euclidean distance.");
     }
 
     double sum_squared_diff = 0.0;
     for (size_t i = 0; i < vec1.size(); ++i) {
-        double diff = vec1[i] - vec2[i];
+        bool wrap = std::find(wrap_indices.begin(), wrap_indices.end(), static_cast<int>(i)) != wrap_indices.end();
+
+        double diff = 0.0;
+        if (wrap) {
+            diff = angularDistance(vec1[i], vec2[i]);
+        } else {
+            diff = vec1[i] - vec2[i];
+        }
+
         sum_squared_diff += diff * diff;
     }
 
     return std::sqrt(sum_squared_diff);
 }
 
-double Math::get_manhattan_distance(const std::vector<double>& vec1, const std::vector<double>& vec2) {
+double Math::get_manhattan_distance(const std::vector<double>& vec1, const std::vector<double>& vec2, const std::vector<int>& wrap_indices) {
     if (vec1.size() != vec2.size()) {
         throw std::invalid_argument("Vectors must be of the same size for Manhattan distance.");
     }
 
     double sum_abs_diff = 0.0;
     for (size_t i = 0; i < vec1.size(); ++i) {
-        sum_abs_diff += std::abs(vec1[i] - vec2[i]);
+        bool wrap = std::find(wrap_indices.begin(), wrap_indices.end(), static_cast<int>(i)) != wrap_indices.end();
+
+        double diff = 0.0;
+        if (wrap) {
+            diff = angularDistance(vec1[i], vec2[i]);
+        } else {
+            diff = std::abs(vec1[i] - vec2[i]);
+        }
+
+        sum_abs_diff += diff;
     }
 
     return sum_abs_diff;

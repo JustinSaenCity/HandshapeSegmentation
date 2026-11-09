@@ -46,7 +46,8 @@ Eigen::Vector3d get_finger_representation(const Eigen::Vector3d& finger_tip, con
 
     const double alpha = std::acos(std::clamp(v.dot(n), -1.0, 1.0));
     const double phi = std::acos(std::clamp(u.dot(d / d.norm()), -1.0, 1.0));
-    const double theta = std::atan2(w.dot(n), u.dot(n));
+    const double theta = std::atan2(w.dot(n), u.dot(n));  // NOTE: ATAN2
+    // const double theta = std::atan(w.dot(n) / u.dot(n));
 
     return Eigen::Vector3d(alpha, phi, theta);
 }
@@ -96,15 +97,15 @@ HandSkeleton pose_to_hand_skeleton(const Pose& pose) {
 std::vector<double> Handshape::compute_handshape_representation(const HandSkeleton& skeleton) {
     std::vector<Eigen::Vector3d> metacarpal_joint_positions = {
         skeleton.thumb_metacarpal,
-        skeleton.thumb_distal,
+        skeleton.thumb_proximal,
         skeleton.index_metacarpal,
-        skeleton.index_distal,
+        skeleton.index_proximal,
         skeleton.middle_metacarpal,
-        skeleton.middle_distal,
+        skeleton.middle_proximal,
         skeleton.ring_metacarpal,
-        skeleton.ring_distal,
+        skeleton.ring_proximal,
         skeleton.pinky_metacarpal,
-        skeleton.pinky_distal
+        skeleton.pinky_proximal
     };
 
     Eigen::Vector3d palm_center = get_palm_center(metacarpal_joint_positions);
@@ -152,6 +153,8 @@ using namespace segmentation;
 #include <Eigen/Dense>
 
 struct HandFrame { Eigen::Vector3d origin; Eigen::Matrix3d R; bool valid; };
+
+std::vector<int> wrapping_indices = {2, 5, 8, 11, 14}; // NOTE: Based on the handshape representation, all atan2 calcs.
 
 HandFrame make_hand_frame(const Eigen::Vector3d& middle_metacarpal,
                           const Eigen::Vector3d& middle_proximal,
@@ -285,11 +288,11 @@ double handskeleton_distance(const HandSkeleton& shape1, const HandSkeleton& sha
 
     switch (method) {
         case MatchingMethod::Euclidean:
-            return Math::get_euclidean_distance(shape1_vec, shape2_vec);
+            return Math::get_euclidean_distance(shape1_vec, shape2_vec, wrapping_indices);
         case MatchingMethod::Cosine:
-            return 1.0 - Math::get_cosine_similarity(shape1_vec, shape2_vec);  // Convert similarity to distance
+            return 1.0 - Math::get_cosine_similarity(shape1_vec, shape2_vec, wrapping_indices);  // Convert similarity to distance
         case MatchingMethod::Manhattan:
-            return Math::get_manhattan_distance(shape1_vec, shape2_vec);
+            return Math::get_manhattan_distance(shape1_vec, shape2_vec, wrapping_indices);
         default:
             throw std::invalid_argument("Unknown matching method.");
     }
