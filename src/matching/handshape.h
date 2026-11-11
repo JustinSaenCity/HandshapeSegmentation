@@ -1,6 +1,6 @@
 #pragma once
 
-#include "types.h"
+#include "lib/types.h"
 
 namespace handshape
 {
@@ -8,6 +8,5 @@ namespace handshape
     {
     public:
         static std::vector<double> compute_handshape_representation(const HandSkeleton& skeleton);
-        static std::vector<double> compute_handshape_representation_from_pose(const Pose& pose);
     };
 }

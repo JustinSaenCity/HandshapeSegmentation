@@ -3,7 +3,7 @@
 #include <nlohmann/json.hpp>
 #include <fstream>
 
-#include "math/math.h"
+#include "lib/math/math.h"
 
 using json = nlohmann::json;
 

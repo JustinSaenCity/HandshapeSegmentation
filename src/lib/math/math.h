@@ -3,7 +3,7 @@
 #include <Eigen/Geometry>
 #include <vector>
 
-#include "types.h"
+#include "lib/types.h"
 
 namespace math
 {

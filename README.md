@@ -19,6 +19,8 @@
 
 ## Configuration
 
+### Segmentation
+
 1. bones - A list of bone names, these bones are used to detect segmentation.
 2. min_segment_length - The minimal number of frames the detected segments will be.
 3. min_acceleration_threshold - The absolute minimal value the peaks and valleys of the acceleration have to be before being detected in rad/s².
@@ -47,9 +49,39 @@ Example `segmentation_config.json`:
               "RightHandRing2",
               "RightHandRing3"],
     "min_segment_length": 2,
-    "min_acceleration_threshold": 0.25,
+    "min_acceleration_threshold": 0.5,
     "smoothing_sigma": 1.5,
     "threshold_factor": 0.5
+}
+```
+
+### Matching
+
+1. handshape_dir - The directory containing the handshape FBX files.
+2. matching_method - The method used to match the handshapes to the input hand skeleton. Options are: "Euclidean", "Cosine", "Manhattan".
+3. bones - A mapping of the bone names in the handshape FBX files to the bone names in the input hand skeleton.
+
+Example `matching_config.json`:
+```json
+{
+    "handshape_dir": "../HandformSession/HandformsTrimmed",
+    "matching_method": "Euclidean",
+    "bones": {
+        "thumb":  { "metacarpal": "RightHandThumb1", "proximal": "RightHandThumb2",
+                    "distal": "RightHandThumb3", "tip": "RightHandThumb4" },
+        "index":  { "metacarpal": "RightHandIndex", "proximal": "RightHandIndex1",
+                    "middle": "RightHandIndex2", "distal": "RightHandIndex3",
+                    "tip": "RightHandIndex4" },
+        "middle": { "metacarpal": "RightHand", "proximal": "RightHandMiddle1",
+                    "middle": "RightHandMiddle2", "distal": "RightHandMiddle3",
+                    "tip": "RightHandMiddle4" },
+        "ring":   { "metacarpal": "RightHandRing", "proximal": "RightHandRing1",
+                    "middle": "RightHandRing2", "distal": "RightHandRing3",
+                    "tip": "RightHandRing4" },
+        "pinky":  { "metacarpal": "RightHandPinky", "proximal": "RightHandPinky1",
+                    "middle": "RightHandPinky2", "distal": "RightHandPinky3",
+                    "tip": "RightHandPinky4" }
+    }
 }
 ```
 
@@ -59,10 +91,10 @@ Example `segmentation_config.json`:
 .\build\Release\shapeseg.exe <path_to_fbx_file>
 ```
 
-or get segmentation data through the C++ function in `src/segmentation.h`:
+or get segmentation data through the C++ function in `src/segmentation/segmentation.h`:
 
 ```cpp
-#include "segmentation.h"
+#include "segmentation/segmentation.h"
 
 int main() {
    double fps;
@@ -72,13 +104,15 @@ int main() {
 }
 ```
 
-and get the matches through the C++ function in `src/matching/poseshape.h`:
+and get the matches through the C++ function in `src/matching/handskeleton.h`:
 
 ```cpp
-#include "matching/poseshape.h"
+#include "matching/handskeleton.h"
 
-int function(const SegmentData& segment_data) {
-   std::vector<MatchInfo> matches = Poseshape::get_matches(segment_data, "path/to/segmentation_config.json", "path/to/matching_config.json");
+// NOTE: This assumes SegmenData is filled through using the pre-match functionality of get_segments(), see main.cpp for an example.
+int function(const SegmentData& segment_data, const std::vector<HandSkeleton>& handshape_handskeletons, const MatchingConfig& match_config) {
+   HandSkeleton input = segment_data.handskeleton;
+   std::vector<Match> matches = Handskel::match_handskeletons(handshape_handskeletons, input, match_config.matching_method);
 }
 ```
 

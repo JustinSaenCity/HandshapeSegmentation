@@ -1,8 +1,24 @@
 #include <cstdio>
+#include <string>
+#include <vector>
+#include <filesystem>
 
 #include "anim.h"
 
 using namespace anim;
+
+std::vector<std::string> Anim::get_all_handshape_files(std::string handshape_dir) {
+    std::vector<std::string> handshape_files;
+
+    // Go through all folders, in the folder get the fbx file located in unreal/Vicon/
+    for (const auto& entry : std::filesystem::directory_iterator(handshape_dir)) {
+        if (entry.is_regular_file() &&
+            (entry.path().extension().string() == ".fbx" || entry.path().extension().string() == ".FBX")) {
+            handshape_files.push_back(entry.path().string());
+        }
+    }
+    return handshape_files;
+}
 
 bool Anim::load_fbx_scene(const char* filename, ufbx_scene** out_scene) {
     ufbx_load_opts opts = {};

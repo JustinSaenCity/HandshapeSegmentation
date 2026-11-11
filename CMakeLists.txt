@@ -22,12 +22,11 @@ target_include_directories(ufbx_lib PUBLIC ${ufbx_SOURCE_DIR})
 # Add the executable target and link libraries
 add_executable(shapeseg
               src/main.cpp
-              src/anim/anim.cpp
-              src/math/math.cpp
-              src/matching/poseshape.cpp
+              src/lib/anim/anim.cpp
+              src/lib/math/math.cpp
               src/matching/handshape.cpp
               src/matching/handskeleton.cpp
-              src/segmentation.cpp)
+              src/segmentation/segmentation.cpp)
 
 target_link_libraries(shapeseg PRIVATE Eigen3::Eigen
                       ufbx_lib

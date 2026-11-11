@@ -1,10 +1,7 @@
-#include "config/matching_config.h"
-#include "anim/anim.h"
-#include "math/math.h"
-#include "segmentation.h"
+#include "lib/anim/anim.h"
+#include "lib/math/math.h"
+#include "segmentation/segmentation.h"
 #include "handshape.h"
-
-#include "types.h"
 
 #include "handskeleton.h"
 
@@ -43,7 +40,7 @@ HandFrame make_hand_frame(const Eigen::Vector3d& middle_metacarpal,
     return f;
 }
 
-HandSkeleton get_average_handskeleton_from_segment(
+HandSkeleton Handskel::get_average_handskeleton_from_segment(
         const std::vector<JointLocationTrack>& tracks, const Segment& segment,
         const json& bone_mapping, bool take_middle_50_percent) 
 {
@@ -125,7 +122,7 @@ std::vector<HandSkeleton> get_handskeletons_from_files(const std::vector<std::st
         if (handshape_location_tracks.empty()) continue;
 
         // Process the tracks
-        HandSkeleton average_handshape = get_average_handskeleton_from_segment(handshape_location_tracks, Segment{0, static_cast<int>(handshape_location_tracks[0].locations.size() - 1)}, bone_mapping, true);
+        HandSkeleton average_handshape = Handskel::get_average_handskeleton_from_segment(handshape_location_tracks, Segment{0, static_cast<int>(handshape_location_tracks[0].locations.size() - 1)}, bone_mapping, true);
         handshapes.push_back(average_handshape);
     }
     return handshapes;
@@ -149,7 +146,7 @@ double handskeleton_distance(const HandSkeleton& shape1, const HandSkeleton& sha
     }
 }
 
-std::vector<Match> match_Handskeletons(const std::vector<HandSkeleton>& handskeletons, const HandSkeleton& input_handskeleton, const MatchingMethod method) {
+std::vector<Match> Handskel::match_handskeletons(const std::vector<HandSkeleton>& handskeletons, const HandSkeleton& input_handskeleton, const MatchingMethod method) {
     std::vector<Match> matches;
     for (size_t i = 0; i < handskeletons.size(); ++i) {
         double distance = handskeleton_distance(handskeletons[i], input_handskeleton, method);
@@ -163,11 +160,6 @@ std::vector<Match> match_Handskeletons(const std::vector<HandSkeleton>& handskel
 
     return matches;
 }
-
-struct HandSkeletonInfo {
-    std::string name;
-    HandSkeleton handskeleton;
-};
 
 void create_distance_matrix_from_handskeletons(const std::vector<HandSkeletonInfo>& handshapes, const MatchingMethod method, std::string output_file)
 {
@@ -207,8 +199,10 @@ void create_distance_matrix_from_handskeletons(const std::vector<HandSkeletonInf
     file.close();
 }
 
-HandSkeletonInfo get_handskeletoninfo_from_file(const std::string& handshape_file, const std::vector<std::string>& bones, const json& bone_mapping, const std::string& string_addition = "", const Segment& segment = Segment{0, -1}, bool take_middle_50_percent = false) {
-
+HandSkeletonInfo Handskel::get_handskeletoninfo_from_file(const std::string& handshape_file,
+    const std::vector<std::string>& bones, const json& bone_mapping, const std::string& string_addition,
+    const Segment& segment, bool take_middle_50_percent) 
+{
     double handshape_fps;
     std::vector<JointLocationTrack> handshape_location_tracks;
     Anim::get_location_tracks_from_fbx(handshape_file, bones, handshape_location_tracks, handshape_fps);
@@ -219,7 +213,7 @@ HandSkeletonInfo get_handskeletoninfo_from_file(const std::string& handshape_fil
     if (segment.end == -1) effective_segment.end = static_cast<int>(handshape_location_tracks[0].locations.size() - 1);
 
     // Process the tracks
-    HandSkeleton average_handshape = get_average_handskeleton_from_segment(handshape_location_tracks, effective_segment, bone_mapping, take_middle_50_percent);
+    HandSkeleton average_handshape = Handskel::get_average_handskeleton_from_segment(handshape_location_tracks, effective_segment, bone_mapping, take_middle_50_percent);
     std::string name = handshape_file.substr(handshape_file.find_last_of("/\\") + 1); // Extract filename from path
     if (!string_addition.empty()) name += "_" + string_addition;
 
@@ -230,7 +224,7 @@ void Handskel::create_distance_matrix_from_handshapefiles(const std::vector<std:
     std::vector<HandSkeletonInfo> handskeletons_info;
 
     for (const auto& handshape_file : handshape_files) {
-        HandSkeletonInfo handskeleton_info = get_handskeletoninfo_from_file(handshape_file, bones, bone_mapping);
+        HandSkeletonInfo handskeleton_info = Handskel::get_handskeletoninfo_from_file(handshape_file, bones, bone_mapping);
         if (!handskeleton_info.name.empty())
             handskeletons_info.push_back(handskeleton_info);
     }
@@ -244,7 +238,7 @@ void Handskel::create_distance_matrix_from_handshapefiles(const std::vector<std:
         std::vector<SegmentData> segments = Segmentation::get_segments(tracks, fps, "./segmentation_config.json", true);
 
         for (int i = 0; i < segments.size(); ++i) {
-            HandSkeletonInfo handskeleton_info = get_handskeletoninfo_from_file(input_file, bones, bone_mapping, std::to_string(i), segments[i].segment, true);
+            HandSkeletonInfo handskeleton_info = Handskel::get_handskeletoninfo_from_file(input_file, bones, bone_mapping, std::to_string(i), segments[i].segment, true);
             if (!handskeleton_info.name.empty())
                 handskeletons_info.push_back(handskeleton_info);
         }

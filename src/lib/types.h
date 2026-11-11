@@ -25,21 +25,6 @@ struct PoseInfo {
     Pose handshape;
 };
 
-struct SegmentData {
-    Segment segment;
-    Pose average_pose;
-};
-
-struct JointTrack {
-    std::string name;
-    std::vector<Eigen::Quaterniond> q;
-};
-
-struct JointLocationTrack {
-    std::string name;
-    std::vector<Eigen::Vector3d> locations;
-};
-
 struct HandSkeleton {  // Based on papers representation
     Eigen::Vector3d thumb_metacarpal = Eigen::Vector3d::Constant(std::numeric_limits<double>::quiet_NaN());
     Eigen::Vector3d thumb_proximal = Eigen::Vector3d::Constant(std::numeric_limits<double>::quiet_NaN());
@@ -69,6 +54,26 @@ struct HandSkeleton {  // Based on papers representation
     Eigen::Vector3d pinky_middle = Eigen::Vector3d::Constant(std::numeric_limits<double>::quiet_NaN());
     Eigen::Vector3d pinky_distal = Eigen::Vector3d::Constant(std::numeric_limits<double>::quiet_NaN());
     Eigen::Vector3d pinky_tip = Eigen::Vector3d::Constant(std::numeric_limits<double>::quiet_NaN());
+};
+
+struct HandSkeletonInfo {
+    std::string name;
+    HandSkeleton handskeleton;
+};
+
+struct SegmentData {
+    Segment segment;
+    HandSkeleton hand_skeleton;
+};
+
+struct JointTrack {
+    std::string name;
+    std::vector<Eigen::Quaterniond> q;
+};
+
+struct JointLocationTrack {
+    std::string name;
+    std::vector<Eigen::Vector3d> locations;
 };
 
 struct HandFrame { Eigen::Vector3d origin; Eigen::Matrix3d R; bool valid; };
