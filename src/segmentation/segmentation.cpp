@@ -3,18 +3,19 @@
 
 #include <cstdio>
 
-#include "config/segmentation_config.h"
-#include "matching/poseshape.h"
+#include "lib/config/segmentation_config.h"
+#include "matching/handskeleton.h"
 
 #include "segmentation.h"
 
 using namespace math;
 using namespace anim;
 using namespace segmentation;
-using namespace poseshape;
+using namespace handskel;
 
 std::vector<SegmentData> Segmentation::get_segments(const std::vector<JointTrack>& tracks, const double fps, 
-                                           const std::string& config_file, bool save_to_csv, bool take_middle_50_percent)
+                                           const std::string& config_file, bool save_to_csv, bool take_middle_50_percent,
+                                           PreMatchInfo pre_match_info)
 {
     // Load config data from the config file
     Config config = Config::load_from_file(config_file);
@@ -51,8 +52,13 @@ std::vector<SegmentData> Segmentation::get_segments(const std::vector<JointTrack
     // Get average handshape for each segment
     std::vector<SegmentData> segment_data_list;
     for (const auto& s : segments) {
-        Pose average_pose = Poseshape::get_average_pose_from_segment(filtered_tracks, s, take_middle_50_percent);
-        segment_data_list.push_back({s, average_pose});        
+        if (pre_match_info.do_pre) {
+            HandSkeleton average_handskel = Handskel::get_average_handskeleton_from_segment(
+                pre_match_info.hand_location_tracks, s, pre_match_info.bone_mapping, take_middle_50_percent);
+            segment_data_list.push_back({s, average_handskel});
+        } else {
+            segment_data_list.push_back({s, HandSkeleton()});  // Empty HandSkeleton if not pre-matching
+        }      
     }
 
     if (save_to_csv) {
@@ -60,14 +66,7 @@ std::vector<SegmentData> Segmentation::get_segments(const std::vector<JointTrack
         std::ofstream csv_file("output/handshape_segments.csv");
         csv_file << "start,end,average_pose\n";
         for (const auto& s : segment_data_list) {
-            csv_file << s.segment.start << "," << s.segment.end << ",";
-            for (int i = 0; i < s.average_pose.joints.size(); ++i) {
-                const std::string& joint_name = s.average_pose.joint_names[i];
-                csv_file << joint_name << ":";
-                const Eigen::Quaterniond& q = s.average_pose.joints[i];
-                csv_file << q.w() << " " << q.x() << " " << q.y() << " " << q.z() << ";";
-            }
-            csv_file << "\n";
+            csv_file << s.segment.start << "," << s.segment.end << "\n";
         }
         csv_file.close();
 
