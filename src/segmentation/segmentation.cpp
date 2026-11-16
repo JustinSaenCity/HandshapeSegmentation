@@ -64,7 +64,7 @@ std::vector<SegmentData> Segmentation::get_segments(const std::vector<JointTrack
     if (save_to_csv) {
         std::filesystem::create_directory("output");
         std::ofstream csv_file("output/handshape_segments.csv");
-        csv_file << "start,end,average_pose\n";
+        csv_file << "start,end\n";
         for (const auto& s : segment_data_list) {
             csv_file << s.segment.start << "," << s.segment.end << "\n";
         }

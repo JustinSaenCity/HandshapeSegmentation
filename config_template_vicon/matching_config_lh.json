@@ -1,0 +1,11 @@
+{
+    "handshape_dir": "../HandformSession/HandformsTrimmed",
+    "matching_method": "Euclidean",
+    "bones": {
+        "thumb":  { "metacarpal": "LeftHandThumb1", "proximal": "LeftHandThumb2", "distal": "LeftHandThumb3", "tip": "LeftHandThumb4" },
+        "index":  { "metacarpal": "LeftHandIndex", "proximal": "LeftHandIndex1", "middle": "LeftHandIndex2", "distal": "LeftHandIndex3", "tip": "LeftHandIndex4" },
+        "middle": { "metacarpal": "LeftHand", "proximal": "LeftHandMiddle1", "middle": "LeftHandMiddle2", "distal": "LeftHandMiddle3", "tip": "LeftHandMiddle4" },
+        "ring":   { "metacarpal": "LeftHandRing", "proximal": "LeftHandRing1", "middle": "LeftHandRing2", "distal": "LeftHandRing3", "tip": "LeftHandRing4" },
+        "pinky":  { "metacarpal": "LeftHandPinky", "proximal": "LeftHandPinky1", "middle": "LeftHandPinky2", "distal": "LeftHandPinky3", "tip": "LeftHandPinky4" }
+    }
+}
