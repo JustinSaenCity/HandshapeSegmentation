@@ -1,5 +1,5 @@
 {
-    "handshape_dir": "../HandformSession/HandformsTrimmed",
+    "handshape_dir": "../HandformSession/HandformsTrimmedMirrored",
     "matching_method": "Euclidean",
     "bones": {
         "thumb":  { "metacarpal": "LeftHandThumb1", "proximal": "LeftHandThumb2", "distal": "LeftHandThumb3", "tip": "LeftHandThumb4" },
