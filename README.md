@@ -64,7 +64,7 @@ Example `segmentation_config.json`:
 Example `matching_config.json`:
 ```json
 {
-    "handshape_dir": "../HandformSession/HandformsTrimmed",
+    "handshape_dir": "fbx/handshapes/HandformsTrimmedMirrored",
     "matching_method": "Euclidean",
     "bones": {
         "thumb":  { "metacarpal": "RightHandThumb1", "proximal": "RightHandThumb2",
