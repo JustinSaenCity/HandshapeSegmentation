@@ -114,15 +114,15 @@ void dist_mat(std::string matching_config_file)
 
 int main(int argc, char** argv)
 {
-    if (argc < 2) { std::puts("Usage: .\\handseg.exe <option> {...}"); return 1; }
+    if (argc < 2) { std::puts("Usage: .\\shapeseg.exe <option> {...}"); return 1; }
 
     switch (argv[1][0]) {
         case 's':  // Segment
-            if (argc < 3) { std::puts("Usage: .\\handseg.exe s <file.fbx>"); return 1; }
+            if (argc < 3) { std::puts("Usage: .\\shapeseg.exe s <file.fbx>"); return 1; }
             segment(argv[2], "segmentation_config.json", "matching_config.json");
             break;
         case 'm':  // Match
-            if (argc < 4) { std::puts("Usage: .\\handseg.exe m <file.fbx> <segment_idx> {k}"); return 1; }
+            if (argc < 4) { std::puts("Usage: .\\shapeseg.exe m <file.fbx> <segment_idx> {k}"); return 1; }
             {
                 std::vector<SegmentData> segments = segment(argv[2], "segmentation_config.json", "matching_config.json");
                 match("matching_config.json", segments, std::stoi(argv[3]), argc > 4 ? std::stoi(argv[4]) : 10);
