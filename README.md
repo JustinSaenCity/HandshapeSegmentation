@@ -64,7 +64,7 @@ Example `segmentation_config.json`:
 Example `matching_config.json`:
 ```json
 {
-    "handshape_dir": "../HandformSession/HandformsTrimmed",
+    "handshape_dir": "fbx/handshapes/HandformsTrimmedMirrored",
     "matching_method": "Euclidean",
     "bones": {
         "thumb":  { "metacarpal": "RightHandThumb1", "proximal": "RightHandThumb2",
@@ -88,8 +88,11 @@ Example `matching_config.json`:
 ## Usage
 
 ```bash
-.\build\Release\shapeseg.exe <path_to_fbx_file>
+.\build\Release\shapeseg.exe <option> {...}
 ```
+
+The options are s, m and d for segmentation, matching and creating a distance matrix respectively,
+
 
 or get segmentation data through the C++ function in `src/segmentation/segmentation.h`:
 
