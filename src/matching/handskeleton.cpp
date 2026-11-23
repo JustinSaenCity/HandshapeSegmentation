@@ -42,7 +42,8 @@ HandFrame make_hand_frame(const Eigen::Vector3d& middle_metacarpal,
 
 HandSkeleton Handskel::get_average_handskeleton_from_segment(
         const std::vector<JointLocationTrack>& tracks, const Segment& segment,
-        const json& bone_mapping, bool take_middle_50_percent) 
+        const json& bone_mapping, bool use_virtual_leaf_bones, double leaf_bone_distance, 
+        bool take_middle_50_percent) 
 {
     int segment_length = segment.end - segment.start + 1;
     int start_frame = take_middle_50_percent ? segment.start + segment_length / 4 : segment.start;
@@ -77,9 +78,14 @@ HandSkeleton Handskel::get_average_handskeleton_from_segment(
     };
 
     // Fill in the tracks for each entry
-    for (auto& e : entries)
+    for (auto& e : entries) {
+        if (use_virtual_leaf_bones && std::string(e.joint) == "tip")
+            continue;
+
         for (const auto& t : tracks)
-            if (t.name == bone_mapping.at(e.finger).at(e.joint).get<std::string>()) { e.track = &t; break; }
+            if (t.name == bone_mapping.at(e.finger).at(e.joint).get<std::string>())
+                { e.track = &t; break; }
+    }
 
     // Helper function to find the track based on the bone type
     auto track_of = [&](Eigen::Vector3d HandSkeleton::* m) -> const JointLocationTrack* {
@@ -100,20 +106,37 @@ HandSkeleton Handskel::get_average_handskeleton_from_segment(
                                       t_idx_metacarpal->locations[t], t_pnk_metacarpal->locations[t]);
         if (!f.valid) continue;
 
-        for (size_t i = 0; i < entries.size(); ++i)  // Each joint
-            if (entries[i].track)
+        for (size_t i = 0; i < entries.size(); ++i) {  // Each joint
+            // If using virtual leaf bones, compute the tip based on the distal joints location, local rotation and the bone distance
+            if (use_virtual_leaf_bones && std::string(entries[i].joint) == "tip") {
+                const JointLocationTrack* distal_track = track_of(entries[i-1].member);
+                const JointLocationTrack* pre_to_distal_track = track_of(entries[i-2].member);
+
+                if (!distal_track || !pre_to_distal_track || distal_track->rotations.empty() || distal_track->locations.empty() || pre_to_distal_track->locations.empty()) {
+                    printf("Warning: Missing data for virtual leaf bone computation for %s %s at frame %d\n", entries[i].finger, entries[i].joint, t);
+                    continue;
+                }
+
+                Eigen::Quaterniond q_local(distal_track->rotations[t]);
+                Eigen::Vector3d world_vector = distal_track->locations[t] - pre_to_distal_track->locations[t];
+                Eigen::Vector3d tip_offset = q_local * (world_vector.normalized() * leaf_bone_distance);
+                sum[i] += f.R.transpose() * ((distal_track->locations[t] + tip_offset) - f.origin);
+            }
+            else if (entries[i].track)
                 sum[i] += f.R.transpose() * (entries[i].track->locations[t] - f.origin);
+        }
         ++used;
     }
     if (used == 0) return avg;
 
     for (size_t i = 0; i < entries.size(); ++i)
-        if (entries[i].track) avg.*(entries[i].member) = sum[i] / used;
+        if (entries[i].track || (use_virtual_leaf_bones && std::string(entries[i].joint) == "tip"))
+            avg.*(entries[i].member) = sum[i] / used;
 
     return avg;
 }
 
-std::vector<HandSkeleton> get_handskeletons_from_files(const std::vector<std::string>& handshape_files, const std::vector<std::string>& bones, const json& bone_mapping) {
+std::vector<HandSkeleton> get_handskeletons_from_files(const std::vector<std::string>& handshape_files, const std::vector<std::string>& bones, const json& bone_mapping, bool use_virtual_leaf_bones, double leaf_bone_distance) {
     std::vector<HandSkeleton> handshapes;
     for (const auto& handshape_file : handshape_files) {
         double handshape_fps;
@@ -122,7 +145,7 @@ std::vector<HandSkeleton> get_handskeletons_from_files(const std::vector<std::st
         if (handshape_location_tracks.empty()) continue;
 
         // Process the tracks
-        HandSkeleton average_handshape = Handskel::get_average_handskeleton_from_segment(handshape_location_tracks, Segment{0, static_cast<int>(handshape_location_tracks[0].locations.size() - 1)}, bone_mapping, true);
+        HandSkeleton average_handshape = Handskel::get_average_handskeleton_from_segment(handshape_location_tracks, Segment{0, static_cast<int>(handshape_location_tracks[0].locations.size() - 1)}, bone_mapping, use_virtual_leaf_bones, leaf_bone_distance, true);
         handshapes.push_back(average_handshape);
     }
     return handshapes;
@@ -200,7 +223,8 @@ void create_distance_matrix_from_handskeletons(const std::vector<HandSkeletonInf
 }
 
 HandSkeletonInfo Handskel::get_handskeletoninfo_from_file(const std::string& handshape_file,
-    const std::vector<std::string>& bones, const json& bone_mapping, const std::string& string_addition,
+    const std::vector<std::string>& bones, const json& bone_mapping, bool use_virtual_leaf_bones,
+    double leaf_bone_distance, const std::string& string_addition,
     const Segment& segment, bool take_middle_50_percent) 
 {
     double handshape_fps;
@@ -213,18 +237,18 @@ HandSkeletonInfo Handskel::get_handskeletoninfo_from_file(const std::string& han
     if (segment.end == -1) effective_segment.end = static_cast<int>(handshape_location_tracks[0].locations.size() - 1);
 
     // Process the tracks
-    HandSkeleton average_handshape = Handskel::get_average_handskeleton_from_segment(handshape_location_tracks, effective_segment, bone_mapping, take_middle_50_percent);
+    HandSkeleton average_handshape = Handskel::get_average_handskeleton_from_segment(handshape_location_tracks, effective_segment, bone_mapping, use_virtual_leaf_bones, leaf_bone_distance, take_middle_50_percent);
     std::string name = handshape_file.substr(handshape_file.find_last_of("/\\") + 1); // Extract filename from path
     if (!string_addition.empty()) name += "_" + string_addition;
 
     return {name, average_handshape};
 }
 
-void Handskel::create_distance_matrix_from_handshapefiles(const std::vector<std::string>& handshape_files, const std::vector<std::string>& input_files, const std::vector<std::string>& bones, const json& bone_mapping, const MatchingMethod method, const std::string& output_file) {
+void Handskel::create_distance_matrix_from_handshapefiles(const std::vector<std::string>& handshape_files, const std::vector<std::string>& input_files, const std::vector<std::string>& bones, const json& bone_mapping, const bool use_virtual_leaf_bones, const double leaf_bone_distance, const MatchingMethod method, const std::string& output_file) {
     std::vector<HandSkeletonInfo> handskeletons_info;
 
     for (const auto& handshape_file : handshape_files) {
-        HandSkeletonInfo handskeleton_info = Handskel::get_handskeletoninfo_from_file(handshape_file, bones, bone_mapping);
+        HandSkeletonInfo handskeleton_info = Handskel::get_handskeletoninfo_from_file(handshape_file, bones, bone_mapping, use_virtual_leaf_bones, leaf_bone_distance);
         if (!handskeleton_info.name.empty())
             handskeletons_info.push_back(handskeleton_info);
     }
@@ -238,7 +262,7 @@ void Handskel::create_distance_matrix_from_handshapefiles(const std::vector<std:
         std::vector<SegmentData> segments = Segmentation::get_segments(tracks, fps, "./segmentation_config.json", true);
 
         for (int i = 0; i < segments.size(); ++i) {
-            HandSkeletonInfo handskeleton_info = Handskel::get_handskeletoninfo_from_file(input_file, bones, bone_mapping, std::to_string(i), segments[i].segment, true);
+            HandSkeletonInfo handskeleton_info = Handskel::get_handskeletoninfo_from_file(input_file, bones, bone_mapping, use_virtual_leaf_bones, leaf_bone_distance, std::to_string(i), segments[i].segment, true);
             if (!handskeleton_info.name.empty())
                 handskeletons_info.push_back(handskeleton_info);
         }

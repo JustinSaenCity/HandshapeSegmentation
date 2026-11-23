@@ -74,6 +74,7 @@ struct JointTrack {
 struct JointLocationTrack {
     std::string name;
     std::vector<Eigen::Vector3d> locations;
+    std::vector<Eigen::Quaterniond> rotations;  // Only needed if virtual leaf bones are used
 };
 
 struct HandFrame { Eigen::Vector3d origin; Eigen::Matrix3d R; bool valid; };

@@ -1,6 +1,8 @@
 {
     "handshape_dir": "fbx/handshapes/HandformsTrimmedMirrored",
     "matching_method": "Euclidean",
+    "use_virtual_leaf_bones": false,
+    "leaf_bone_distance": 0.02,
     "bones": {
         "thumb":  { "metacarpal": "RightHandThumb1", "proximal": "RightHandThumb2", "distal": "RightHandThumb3", "tip": "RightHandThumb4" },
         "index":  { "metacarpal": "RightHandIndex", "proximal": "RightHandIndex1", "middle": "RightHandIndex2", "distal": "RightHandIndex3", "tip": "RightHandIndex4" },

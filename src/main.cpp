@@ -33,6 +33,8 @@ std::vector<SegmentData> segment(std::string fbx_file, std::string segmentation_
     PreMatchInfo pre_match_info = PreMatchInfo();
     pre_match_info.do_pre = true;
     pre_match_info.bone_mapping = match_config.bone_mapping;
+    pre_match_info.use_virtual_leaf_bones = match_config.use_virtual_leaf_bones;
+    pre_match_info.leaf_bone_distance = match_config.leaf_bone_distance;
     pre_match_info.hand_location_tracks.clear();
     Anim::get_location_tracks_from_fbx(fbx_file, {}, pre_match_info.hand_location_tracks, fps);
 
@@ -56,7 +58,7 @@ void match(std::string matching_config_file, const std::vector<SegmentData>& seg
     std::vector<HandSkeleton> handshape_handskeletons;
     for (const std::string& handshape_file : handshape_files) {
         HandSkeletonInfo handskeleton_info = Handskel::get_handskeletoninfo_from_file(
-            handshape_file, {}, match_config.bone_mapping);
+            handshape_file, {}, match_config.bone_mapping, match_config.use_virtual_leaf_bones, match_config.leaf_bone_distance);
         
         handshape_handskeletons.push_back(handskeleton_info.handskeleton);
     }
@@ -106,6 +108,7 @@ void dist_mat(std::string matching_config_file)
     // Create distance matrix from handshape files and fbx files
     Handskel::create_distance_matrix_from_handshapefiles(
         handshape_files, fbx_files, {}, match_config.bone_mapping,
+        match_config.use_virtual_leaf_bones, match_config.leaf_bone_distance,
         match_config.matching_method, "output/handshape_distance_matrix_handskel.csv");
 
     printf("Distance matrix created. Results saved to output/\n");

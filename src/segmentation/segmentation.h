@@ -15,6 +15,8 @@ using json = nlohmann::json;
 struct PreMatchInfo {
     bool do_pre = false;
     std::vector<JointLocationTrack> hand_location_tracks;
+    bool use_virtual_leaf_bones = false;
+    double leaf_bone_distance = 2.0;
     json bone_mapping;
 };
 

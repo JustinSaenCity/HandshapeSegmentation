@@ -54,7 +54,8 @@ std::vector<SegmentData> Segmentation::get_segments(const std::vector<JointTrack
     for (const auto& s : segments) {
         if (pre_match_info.do_pre) {
             HandSkeleton average_handskel = Handskel::get_average_handskeleton_from_segment(
-                pre_match_info.hand_location_tracks, s, pre_match_info.bone_mapping, take_middle_50_percent);
+                pre_match_info.hand_location_tracks, s, pre_match_info.bone_mapping, pre_match_info.use_virtual_leaf_bones, 
+                pre_match_info.leaf_bone_distance, take_middle_50_percent);
             segment_data_list.push_back({s, average_handskel});
         } else {
             segment_data_list.push_back({s, HandSkeleton()});  // Empty HandSkeleton if not pre-matching

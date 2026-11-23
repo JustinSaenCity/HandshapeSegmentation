@@ -1,11 +1,13 @@
 {
-    "handshape_dir": "fbx/handshapes/HandformsTrimmedMirrored",
+    "handshape_dir": "fbx/handshapes/palmer/RecordedMirrored",
     "matching_method": "Euclidean",
+    "use_virtual_leaf_bones": true,
+    "leaf_bone_distance": 0.02,
     "bones": {
-        "thumb":  { "metacarpal": "RightHandThumb1", "proximal": "RightHandThumb2", "distal": "RightHandThumb3", "tip": "RightHandThumb4" },
-        "index":  { "metacarpal": "RightHandIndex", "proximal": "RightHandIndex1", "middle": "RightHandIndex2", "distal": "RightHandIndex3", "tip": "RightHandIndex4" },
-        "middle": { "metacarpal": "RightHand", "proximal": "RightHandMiddle1", "middle": "RightHandMiddle2", "distal": "RightHandMiddle3", "tip": "RightHandMiddle4" },
-        "ring":   { "metacarpal": "RightHandRing", "proximal": "RightHandRing1", "middle": "RightHandRing2", "distal": "RightHandRing3", "tip": "RightHandRing4" },
-        "pinky":  { "metacarpal": "RightHandPinky", "proximal": "RightHandPinky1", "middle": "RightHandPinky2", "distal": "RightHandPinky3", "tip": "RightHandPinky4" }
+        "thumb":  { "metacarpal": "thumb_01_r", "proximal": "thumb_02_r", "distal": "thumb_03_r", "tip": "" },
+        "index":  { "metacarpal": "index_metacarpal_r", "proximal": "index_01_r", "middle": "index_02_r", "distal": "index_03_r", "tip": "" },
+        "middle": { "metacarpal": "middle_metacarpal_r", "proximal": "middle_01_r", "middle": "middle_02_r", "distal": "middle_03_r", "tip": "" },
+        "ring":   { "metacarpal": "ring_metacarpal_r", "proximal": "ring_01_r", "middle": "ring_02_r", "distal": "ring_03_r", "tip": "" },
+        "pinky":  { "metacarpal": "pinky_metacarpal_r", "proximal": "pinky_01_r", "middle": "pinky_02_r", "distal": "pinky_03_r", "tip": "" }
     }
 }

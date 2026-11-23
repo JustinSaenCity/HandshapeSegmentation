@@ -31,6 +31,10 @@ bool Anim::load_fbx_scene(const char* filename, ufbx_scene** out_scene) {
         std::fprintf(stderr, "Error loading fbx file %s: %s\n", filename, error.description.data);
         return 1;
     }
+
+    ufbx_real meters_per_unit = (*out_scene)->settings.unit_meters;
+    printf("1 FBX unit = %f meters\n", meters_per_unit);
+
     return 0;
 }
 
@@ -93,6 +97,10 @@ void Anim::fill_joint_locations(
 
             Eigen::Vector3d v(pos.x, pos.y, pos.z);
             out_tracks[j].locations.emplace_back(v);
+
+            ufbx_transform tr = ufbx_evaluate_transform(anim, nodes[j], t);
+            out_tracks[j].rotations.emplace_back(tr.rotation.w, tr.rotation.x,
+                                                tr.rotation.y, tr.rotation.z);
         }
 
         ufbx_free_scene(eval_scene);
