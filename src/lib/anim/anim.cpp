@@ -32,9 +32,6 @@ bool Anim::load_fbx_scene(const char* filename, ufbx_scene** out_scene) {
         return 1;
     }
 
-    ufbx_real meters_per_unit = (*out_scene)->settings.unit_meters;
-    printf("1 FBX unit = %f meters\n", meters_per_unit);
-
     return 0;
 }
 

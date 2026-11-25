@@ -12,6 +12,7 @@
 #include "lib/math/math.h"
 #include "lib/anim/anim.h"
 #include "lib/config/matching_config.h"
+#include "lib/normalisation/canonhand.h"
 #include "matching/handskeleton.h"
 #include "segmentation/segmentation.h"
 
@@ -47,7 +48,7 @@ std::vector<SegmentData> segment(std::string fbx_file, std::string segmentation_
     return segments;
 }
 
-void match(std::string matching_config_file, const std::vector<SegmentData>& segments, int segment_index, int k = 10)
+void match(std::string matching_config_file, const std::vector<SegmentData>& segments, int segment_index, int k = 10, bool canonicalise = false)
 {
     MatchingConfig match_config = MatchingConfig::load_from_file(matching_config_file);
 
@@ -63,9 +64,27 @@ void match(std::string matching_config_file, const std::vector<SegmentData>& seg
         handshape_handskeletons.push_back(handskeleton_info.handskeleton);
     }
 
+    HandSkeleton target_skeleton = segments[segment_index].hand_skeleton;
+
+    // Canonicalise the hand skeleton if requested
+    if (canonicalise) {
+        for (auto& handskeleton : handshape_handskeletons) {
+            auto canonicalised = hand_canon::canonicalise(handskeleton, target_skeleton);
+            if (canonicalised) {
+                handskeleton = *canonicalised;
+            }
+        }
+
+        // NOTE: At this point the following does nothing. But it is here in case we want to reference a different skeleton.
+        // auto canonicalised_segment = hand_canon::canonicalise(target_skeleton, target_skeleton);
+        // if (canonicalised_segment) {
+        //     target_skeleton = *canonicalised_segment;
+        // }
+    }
+
     // Match
     std::vector<Match> matches = Handskel::match_handskeletons(
-        handshape_handskeletons, segments[segment_index].hand_skeleton, match_config.matching_method);
+        handshape_handskeletons, target_skeleton, match_config.matching_method);
 
     printf("Matches for segment %d:\n", segment_index);
     int i = 0;
@@ -125,10 +144,22 @@ int main(int argc, char** argv)
             segment(argv[2], "segmentation_config.json", "matching_config.json");
             break;
         case 'm':  // Match
-            if (argc < 4) { std::puts("Usage: .\\shapeseg.exe m <file.fbx> <segment_idx> {k}"); return 1; }
+            if (argc < 4) { std::puts("Usage: .\\shapeseg.exe m <file.fbx> <segment_idx> {-k k} {-c}"); return 1; }
             {
+                // Get optional parameters
+                int k = 10;  // Default value
+                bool canonicalise = false;  // Default value
+                for (int i = 4; i < argc; ++i) {
+                    std::string arg = argv[i];
+                    if (arg == "-k" && i + 1 < argc) {
+                        k = std::stoi(argv[++i]);
+                    } else if (arg == "-c") {
+                        canonicalise = true;
+                    }
+                }
+
                 std::vector<SegmentData> segments = segment(argv[2], "segmentation_config.json", "matching_config.json");
-                match("matching_config.json", segments, std::stoi(argv[3]), argc > 4 ? std::stoi(argv[4]) : 10);
+                match("matching_config.json", segments, std::stoi(argv[3]), k, canonicalise);
             }
             break;
         case 'd':  // Distance matrix
