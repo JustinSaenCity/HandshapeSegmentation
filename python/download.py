@@ -2,7 +2,7 @@ import requests
 from pathlib import Path
 
 API = 'https://signcollect.nl/blendBaking/api.php'
-OUT = Path('./fbx/palmer')
+OUT = Path('./fbx/palmer/processed')
 OUT.mkdir(exist_ok=True)
 
 def klaar_sentences():
